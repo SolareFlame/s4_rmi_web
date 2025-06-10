@@ -1,4 +1,4 @@
-package activeRecord;
+
 
 public class ServeurNonIdentifieException extends Exception {
     public ServeurNonIdentifieException() {

@@ -1,4 +1,4 @@
-package activeRecord;
+
 
 public class ServeurActionNonPermiseException extends Exception {
     public ServeurActionNonPermiseException() {

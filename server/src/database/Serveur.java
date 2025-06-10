@@ -3,7 +3,7 @@ package database;
 import java.sql.*;
 import java.util.ArrayList;
 
-public class Serveur {
+public class Serveur implements ServiceDatabaseInterface {
 
     private int numserv = -1;
     private String email;

@@ -1,15 +1,17 @@
 package database;
 
+import com.google.gson.Gson;
 import proxy.ServiceProxyInterface;
 
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.sql.*;
 import java.util.ArrayList;
 
-public class Serveur implements ServiceDatabaseInterface {
+public class Serveur implements ServiceDatabaseInterface, Remote {
 
     private int numserv = -1;
     private String email;
@@ -37,6 +39,12 @@ public class Serveur implements ServiceDatabaseInterface {
             System.out.println("\nConnexion réussie, bienvenue " + this.nom);
         } else
             throw new ServeurIncorrectException();
+
+        // on lance notre service dans notre annuaire
+        lancerService();
+
+        // on inscrit notre service au service central
+        inscrireService("ipfactisse", 9999);
     }
 
     /**
@@ -273,11 +281,6 @@ public class Serveur implements ServiceDatabaseInterface {
         }
     }
 
-    @Override
-    public String consulterToutesDonneesRestoNancy() throws ServeurNonIdentifieException, ServeurActionNonPermiseException {
-        return "";
-    }
-
     /**
      * Début de la transaction
      *
@@ -360,6 +363,36 @@ public class Serveur implements ServiceDatabaseInterface {
             System.err.println("Erreur lors de l'inscription du service : " + e.getMessage());
             return false;
         }
+    }
+
+    public void lancerService(){
+        try {
+            int port = 1099;
+            Registry registry = LocateRegistry.createRegistry(port);
+            System.out.println("Registre RMI créé sur le port : " + port);
+
+            String nom = "serviceDB";
+            registry.rebind(nom, this);
+
+            String[] services = registry.list();
+            for (String s : services) {
+                System.out.println("- " + s);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Erreur serveur RMI : " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public String transformerJSON(Object o){
+        Gson gson = new Gson();
+        return gson.toJson(o);
+    }
+
+    @Override
+    public String consulterToutesDonneesRestoNancy(){
+        return transformerJSON(Restaurant.getCoordonnees());
     }
 }
 

@@ -14,14 +14,16 @@ import java.util.Scanner;
 class MainDB {
     public static void main(String[] args) throws SQLException, ServeurIncorrectException, ServeurActionNonPermiseException, ServeurNonIdentifieException, InterruptedException {
 
-        Scanner scanner = new Scanner(System.in);
+        Serveur s = new Serveur("user1@mail.com", "$fg#;mdp$$$$$0");
+
+/*        Scanner scanner = new Scanner(System.in);
         Serveur s = null;
         String mail;
         String mdp;
 
         int choix;
         boolean bonChoix;
-        boolean connecte = false;
+        boolean connecte = false;*/
 
         /*
         // test mauvaise connexion
@@ -47,7 +49,7 @@ class MainDB {
 
          */
 
-        System.out.println(" --- Bienvenue sur le menu de Miaam --- ");
+        /*System.out.println(" --- Bienvenue sur le menu de Miaam --- ");
         System.out.println("Veuillez d'abord vous connecter : ");
 
 
@@ -132,7 +134,7 @@ class MainDB {
                     System.out.println(s.consulterPlatsDispo());
                     break;
                 case 4:  // Commander des plats
-                    /* public boolean commanderPlats(int numres, int numplat, int qty) */
+                    *//* public boolean commanderPlats(int numres, int numplat, int qty) *//*
                     int numRes = demanderReservation(scanner);
                     int[] platAndQte = demanderPlat(scanner);
                     int numPlat = platAndQte[0];
@@ -323,12 +325,12 @@ class MainDB {
         return numres_entree;
     }
 
-    /**
-     * Demande le plat et la quantité à commander
-     *
-     * @param scanner Scanner
-     * @return [0] : le numéro du plat, [1] : la quantité
-     */
+    *//**
+         * Demande le plat et la quantité à commander
+         *
+         * @param scanner Scanner
+         * @return [0] : le numéro du plat, [1] : la quantité
+         *//*
     public static int[] demanderPlat(Scanner scanner) {
         int plat_entree = -1;
         int qte_entree = -1;
@@ -355,5 +357,6 @@ class MainDB {
             System.err.println("Erreur dans la demande du plat");
         }
         return new int[]{plat_entree, qte_entree};
+    }*/
     }
 }

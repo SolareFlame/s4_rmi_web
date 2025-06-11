@@ -59,6 +59,8 @@ public interface ServiceDatabaseInterface {
      */
     public boolean calculerMontantPourEncaissement(int numRes) throws ServeurNonIdentifieException, ServeurActionNonPermiseException;
 
+    /* Fonction sujet commence ici */
+
     public String consulterToutesDonneesRestoNancy() throws ServeurNonIdentifieException, ServeurActionNonPermiseException;
 
 }

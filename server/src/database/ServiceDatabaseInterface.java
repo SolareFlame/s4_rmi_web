@@ -7,7 +7,7 @@ public interface ServiceDatabaseInterface extends Remote {
 
     /* Fonction sujet commence ici */
 
+    // /database/restaurants/
     public String consulterToutesDonneesRestoNancy() throws RemoteException;
-
 }
 

@@ -23,10 +23,6 @@ public class ServiceProxy implements ServiceProxyInterface {
         try {
             this.s_db = s_db;
             System.out.println("Un nouveau service DB s'est connecté");
-            /* TEST AVANT CLIENT, A SUPPRIMER ENSUITE */
-            Gson gson = new Gson();
-            System.out.println(s_db.consulterToutesDonneesRestoNancy());
-            //System.out.println(gson.fromJson(s_db.consulterToutesDonneesRestoNancy()));
             return true;
         } catch (Throwable e){
             System.err.println("Un service DB n'a pas put se connecter");
@@ -62,7 +58,7 @@ public class ServiceProxy implements ServiceProxyInterface {
         this.server = HttpServer.create(new InetSocketAddress(web_port), 0);
 
         // PARTIE DATABASE RMI
-        DatabaseRouter router_db = new DatabaseRouter(s_db);
+        DatabaseRouter router_db = new DatabaseRouter(this);
         server.createContext("/database", router_db);
 
         // PARTIE DATA RMI

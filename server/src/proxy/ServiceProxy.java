@@ -1,5 +1,6 @@
 package proxy;
 
+import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
@@ -10,6 +11,7 @@ import data.ServiceDataInterface;
 import database.ServiceDatabaseInterface;
 import proxy.routers.DataRouter;
 import proxy.routers.DatabaseRouter;
+import java.rmi.RemoteException;
 
 public class ServiceProxy implements ServiceProxyInterface {
 
@@ -21,6 +23,10 @@ public class ServiceProxy implements ServiceProxyInterface {
         try {
             this.s_db = s_db;
             System.out.println("Un nouveau service DB s'est connecté");
+            /* TEST AVANT CLIENT, A SUPPRIMER ENSUITE */
+            Gson gson = new Gson();
+            System.out.println(s_db.consulterToutesDonneesRestoNancy());
+            //System.out.println(gson.fromJson(s_db.consulterToutesDonneesRestoNancy()));
             return true;
         } catch (Throwable e){
             System.err.println("Un service DB n'a pas put se connecter");
@@ -84,4 +90,3 @@ public class ServiceProxy implements ServiceProxyInterface {
         }
     }
 }
-

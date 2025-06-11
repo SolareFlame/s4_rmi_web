@@ -57,7 +57,7 @@ public class Restaurant {
             prep.execute();
             ResultSet rs = prep.getResultSet();
             while (rs.next()) {
-                String nomRestaurant = rs.getString("nom_restaurant");
+                String nomRestaurant = rs.getString("nom");
 
                 Map<String, String> coordonnees = new LinkedHashMap<String, String>();
                 coordonnees.put("rue", rs.getString("rue"));

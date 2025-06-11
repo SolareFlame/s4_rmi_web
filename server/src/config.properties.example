@@ -8,6 +8,7 @@ host=localhost
 port=8080
 
 # RMI
+rmi_host=localhost
 rmi_registry_port=1234
 rmi_service_name=proxy
 

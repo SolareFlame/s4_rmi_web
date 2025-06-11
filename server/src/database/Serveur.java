@@ -87,7 +87,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
      * @param date   la date de la reservation YYYY-MM-DD
      * @param heure  l'heure de la reservation JUSTE L'HEURE
      */
-    public boolean reserverTable(int numtab, String date, String heure) throws ServeurNonIdentifieException {
+    public String reserverTable(int numtab, String date, String heure) throws ServeurNonIdentifieException {
         if (numserv == -1) throw new ServeurNonIdentifieException();
         Connection co = DBConnection.getConnection();
 
@@ -97,12 +97,16 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         if (Reservation.reserver(co, numtab, date, heure)) {
             System.out.println("Réservation réussie");
             finTransaction(co); // fin de la transaction
-            return true;
+            return toJsonReservation("OK", "Table réservée avec succès");
         } else {
             System.err.println("Erreur lors de la réservation");
             annulerTransaction(co); // annulation de la transaction
-            return false;
+            return toJsonReservation("ERROR", "Erreur lors de la réservation");
         }
+    }
+
+    public String toJsonReservation(String statue, String details){
+        return "{ \""+ statue +"\": \"OK\", \""+ details + "\": \"Table réservée avec succès\" }";
     }
 
     /**

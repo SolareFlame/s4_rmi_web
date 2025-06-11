@@ -9,5 +9,7 @@ public interface ServiceDatabaseInterface extends Remote {
 
     public String consulterToutesDonneesRestoNancy() throws RemoteException;
 
+    public String reserverTable(int numtab, String date, String heure) throws RemoteException, ServeurNonIdentifieException;
+
 }
 

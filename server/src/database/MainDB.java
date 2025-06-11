@@ -1,5 +1,7 @@
 package database;
 
+import config.ConfigLoader;
+
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -13,6 +15,9 @@ import java.util.Scanner;
 
 class MainDB {
     public static void main(String[] args) throws SQLException, ServeurIncorrectException, ServeurActionNonPermiseException, ServeurNonIdentifieException, InterruptedException {
+        ConfigLoader config = new ConfigLoader();
+        String host = config.get("rmi_host");
+        int port = Integer.parseInt(config.get("rmi_port"));
 
         // on créer un serveur agrédité
         Serveur s = null;
@@ -29,7 +34,7 @@ class MainDB {
             s.lancerService();
 
             // on inscrit notre service au service central
-            s.inscrireService("127.0.0.1", 1234);
+            s.inscrireService(host, port);
         }
 
         /*

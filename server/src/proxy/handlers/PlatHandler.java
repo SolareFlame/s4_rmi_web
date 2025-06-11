@@ -23,7 +23,7 @@ public class PlatHandler extends Handler {
         String[] parts = path.split("/");
         Map<String, String> queryParams = ApiParser.parseQuery(exchange.getRequestURI().getQuery());
 
-        //GET /plats/
+/*        //GET /plats/
         if (parts.length == 3 && "plats".equals(parts[2])) {
             if (queryParams.isEmpty()) {
                 String response = s_db.consulterPlatsDispo();
@@ -33,6 +33,6 @@ public class PlatHandler extends Handler {
             }
         } else {
             sendResponse(exchange, 404, "{\"error\": \"Not Found\"}");
-        }
+        }*/
     }
 }

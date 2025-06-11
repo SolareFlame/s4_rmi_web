@@ -29,42 +29,19 @@ class MainDB {
             s.lancerService();
 
             // on inscrit notre service au service central
-            s.inscrireService("127.0.0.1", 1235);
+            s.inscrireService("127.0.0.1", 1234);
         }
-/*        Scanner scanner = new Scanner(System.in);
-        Serveur s = null;
-        String mail;
-        String mdp;
-
-        int choix;
-        boolean bonChoix;
-        boolean connecte = false;*/
 
         /*
-        // test mauvaise connexion
-        try {
-            s = new Serveur("fake", "fake");
-        } catch (ServeurIncorrectException e) {
-            System.out.println("Connexion incorrecte : normal");
-        }
-
-        // test bonne connexion
-        try {
-            s = new Serveur("user1@mail.com", "$fg#;mdp$$$$$0");
-        } catch (ServeurIncorrectException e) {
-            System.out.println("Connexion incorrecte : PAS normal");
-        }
-
-        s = new Serveur("user1@mail.com", "$fg#;mdp$$$$$0");
         System.out.println(s.consulterTable("2019-12-12", "12"));
 
         System.out.println(s.consulterPlatsDispo());
 
         System.out.println(s.consulterAffectation());
 
-         */
 
-        /*System.out.println(" --- Bienvenue sur le menu de Miaam --- ");
+
+        System.out.println(" --- Bienvenue sur le menu de Miaam --- ");
         System.out.println("Veuillez d'abord vous connecter : ");
 
 

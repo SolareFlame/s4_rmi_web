@@ -24,6 +24,7 @@ class LancerProxy {
 
             registry.rebind(rmi_service_name, proxy);
 
+            System.out.println("Proxy started and waiting for connections...");
             serviceProxy.startHttpServer();
         } catch (Exception e) {
             e.printStackTrace();

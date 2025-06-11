@@ -45,7 +45,7 @@ public class Restaurant {
      * numero_rue
      * ville
      */
-    public static String getCoordonnees() {
+    public static Map<String, Map<String, String>> getCoordonnees() {
         Connection co = DBConnection.getConnection();
         String request = "SELECT nom, rue, numero_rue, ville FROM restaurant;";
 
@@ -70,8 +70,9 @@ public class Restaurant {
             e.printStackTrace();
         }
         // Conversion en JSON
-        Gson gson = new Gson();
-        return gson.toJson(restaurants);
+        return restaurants;
+        /*Gson gson = new Gson();
+        return gson.toJson(restaurants);*/
     }
 
     public static boolean exist(int numtab) {

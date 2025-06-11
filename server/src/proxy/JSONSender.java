@@ -25,8 +25,20 @@ public class JSONSender {
      * @param message Message d'erreur.
      * @return Chaîne JSON {"error": "..."}
      */
-    public static String toErrorJson(String message) {
-        return gson.toJson(Map.of("error", message));
+    public static String toErrorJson(String message, int StatusCode) {
+        return gson.toJson(Map.of("error", message, "status", StatusCode));
+    }
+
+    public static int getJsonStatusCode(String jsonError) {
+        try {
+            Map<String, Object> errorMap = gson.fromJson(jsonError, Map.class);
+            if (errorMap.containsKey("status")) {
+                return ((Number) errorMap.get("status")).intValue();
+            }
+        } catch (Exception e) {
+            return 500;
+        }
+        return 500;
     }
 
     /**

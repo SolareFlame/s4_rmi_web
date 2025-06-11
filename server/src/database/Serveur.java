@@ -109,7 +109,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         if (!Table.exist(numtab)) {
             System.out.println("La table n'existe pas");
             //return toJsonReservation("ERROR", "La table n'existe pas");
-            return toErrorJson("La table n'existe pas");
+            return toErrorJson("La table n'existe pas", 404);
         }
         System.out.println("  - Table existe");
 
@@ -117,7 +117,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         if (!Table.isDispoByDate(date, heure, numtab)) {
             System.out.println("La table n'est pas disponible pour cette date et heure");
             //return toJsonReservation("ERROR", "La table n'est pas disponible pour cette date et heure");
-            return toErrorJson("La table n'est pas disponible pour cette date et heure");
+            return toErrorJson("La table n'est pas disponible pour cette date et heure", 409);
         }
         System.out.println("  - Table est disponible");
 
@@ -125,7 +125,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         if (!Table.isBigEnough(numtab, nbpers)) {
             System.out.println("La table n'est pas assez grande");
             //return toJsonReservation("ERROR", "La table n'est pas assez grande");
-            return toErrorJson("La table n'est pas assez grande");
+            return toErrorJson("La table n'est pas assez grande", 403);
         }
         System.out.println("  - Table assez grande");
 
@@ -141,12 +141,13 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
                     "nbpers", nbpers,
                     "nom", nom,
                     "prenom", prenom,
-                    "telephone", telephone
+                    "telephone", telephone,
+                    "statusCode", 201
             ));
         } else {
             System.err.println("Erreur lors de la réservation de la table");
             //return toJsonReservation("ERROR", "Erreur lors de la réservation de la table");
-            return toErrorJson("Erreur lors de la réservation de la table");
+            return toErrorJson("Erreur lors de la réservation de la table", 500);
         }
     }
 

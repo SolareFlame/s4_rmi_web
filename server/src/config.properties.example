@@ -1,12 +1,12 @@
 [DATABASE]
-url=jdbc:mysql://localhost:3306/miaam
-username=root
-password=
+urlDB=jdbc:mysql://localhost:3306/miaam
+usernameDB=root
+passwordDB=
 
 [SERVICECENTRAL]
-url=http://localhost:8080/servicecentral
-ip=1010
-port=8080
+urlSC=http://localhost:8080/servicecentral
+ipSC=127.0.0.1
+portSC=1234
 
 [API]
 api.url=https://carto.g-ny.org/data/cifs/cifs_waze_v2.json

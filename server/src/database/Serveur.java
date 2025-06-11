@@ -9,6 +9,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.sql.*;
 import java.util.ArrayList;
 
@@ -40,12 +41,12 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
             System.out.println("\nConnexion réussie, bienvenue " + this.nom);
         } else
             throw new ServeurIncorrectException();
-
+/*
         // on lance notre service dans notre annuaire
         lancerService();
 
         // on inscrit notre service au service central
-        inscrireService("127.0.0.1", 1234);
+        inscrireService("127.0.0.1", 1235);*/
     }
 
     /**
@@ -370,12 +371,13 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
 
     public void lancerService() {
         try {
-            int port = 1099;
+            int port = 1098;
             Registry registry = LocateRegistry.createRegistry(port);
             System.out.println("Registre RMI créé sur le port : " + port);
 
             String nom = "serviceDB";
-            registry.rebind(nom, this);
+            ServiceDatabaseInterface dbService = (ServiceDatabaseInterface) UnicastRemoteObject.exportObject(this, 0);
+            registry.rebind(nom, dbService);
 
             String[] services = registry.list();
             for (String s : services) {
@@ -394,7 +396,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
     }
 
     @Override
-    public String consulterToutesDonneesRestoNancy() {
+    public String consulterToutesDonneesRestoNancy() throws RemoteException {
         return transformerJSON(Restaurant.getCoordonnees());
     }
 }

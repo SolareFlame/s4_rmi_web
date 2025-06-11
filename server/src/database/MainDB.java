@@ -14,8 +14,23 @@ import java.util.Scanner;
 class MainDB {
     public static void main(String[] args) throws SQLException, ServeurIncorrectException, ServeurActionNonPermiseException, ServeurNonIdentifieException, InterruptedException {
 
-        Serveur s = new Serveur("user1@mail.com", "$fg#;mdp$$$$$0");
+        // on créer un serveur agrédité
+        Serveur s = null;
+        boolean isConnecte = false;
+        try {
+            s = new Serveur("user1@mail.com", "$fg#;mdp$$$$$0");
+            isConnecte = true;
+        } catch (ServeurIncorrectException e) {
+            System.out.println("Connexion échoué : mot de passe incorrect");
+        }
 
+        if (isConnecte) {
+            // on lance notre service dans notre annuaire
+            s.lancerService();
+
+            // on inscrit notre service au service central
+            s.inscrireService("127.0.0.1", 1235);
+        }
 /*        Scanner scanner = new Scanner(System.in);
         Serveur s = null;
         String mail;

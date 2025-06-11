@@ -339,7 +339,7 @@ public class Serveur implements ServiceDatabaseInterface {
                 }
 
                 ServiceProxyInterface sp = (ServiceProxyInterface) reg.lookup("proxy");
-                sp.enregisterDB(this);
+                sp.enregisterServiceDB(this);
 
             } catch (Error e) {
                 System.err.println("erreur");

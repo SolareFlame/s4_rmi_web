@@ -3,7 +3,6 @@ package database;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import proxy.ApiParser;
 import proxy.ServiceProxyInterface;
 
 import java.io.Serializable;
@@ -17,6 +16,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Map;
+
+import static proxy.JSONSender.*;
 
 public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
 
@@ -107,30 +108,45 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         // on verifie que la table existe
         if (!Table.exist(numtab)) {
             System.out.println("La table n'existe pas");
-            return toJsonReservation("ERROR", "La table n'existe pas");
+            //return toJsonReservation("ERROR", "La table n'existe pas");
+            return toErrorJson("La table n'existe pas");
         }
         System.out.println("  - Table existe");
 
         // on verifie que la table est disponible
         if (!Table.isDispoByDate(date, heure, numtab)) {
             System.out.println("La table n'est pas disponible pour cette date et heure");
-            return toJsonReservation("ERROR", "La table n'est pas disponible pour cette date et heure");
+            //return toJsonReservation("ERROR", "La table n'est pas disponible pour cette date et heure");
+            return toErrorJson("La table n'est pas disponible pour cette date et heure");
         }
         System.out.println("  - Table est disponible");
 
         // on verifie que la table puisse accueillir le nombre de personnes
         if (!Table.isBigEnough(numtab, nbpers)) {
             System.out.println("La table n'est pas assez grande");
-            return toJsonReservation("ERROR", "La table n'est pas assez grande");
+            //return toJsonReservation("ERROR", "La table n'est pas assez grande");
+            return toErrorJson("La table n'est pas assez grande");
         }
         System.out.println("  - Table assez grande");
 
         if (reserverTable(numtab, date, heure, nbpers, nom, prenom, telephone)) {
             System.out.println("Table réservée avec succès");
-            return toJsonReservation("OK", "Table réservée avec succès");
+            //return toJsonReservation("OK", "Table réservée avec succès");
+            return toJson(Map.of(
+                    "status", "OK",
+                    "details", "Table réservée avec succès",
+                    "numtab", numtab,
+                    "date", date,
+                    "heure", heure,
+                    "nbpers", nbpers,
+                    "nom", nom,
+                    "prenom", prenom,
+                    "telephone", telephone
+            ));
         } else {
             System.err.println("Erreur lors de la réservation de la table");
-            return toJsonReservation("ERROR", "Erreur lors de la réservation de la table");
+            //return toJsonReservation("ERROR", "Erreur lors de la réservation de la table");
+            return toErrorJson("Erreur lors de la réservation de la table");
         }
     }
 

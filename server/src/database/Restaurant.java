@@ -8,34 +8,30 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-public class Table {
-    private int numtab;
-    private int nbplace;
+public class Restaurant {
+    private String ville;
+    private String rue;
+    private int numeroRue;
+    private String nom;
 
-    private Table(int numtab, int nbplace) {
-        this.numtab = numtab;
-        this.nbplace = nbplace;
+    private Restaurant(String ville, String rue, int numeroRue, String nom) {
+        this.ville = ville;
+        this.rue = rue;
+        this.numeroRue = numeroRue;
+        this.nom = nom;
     }
 
-    public int getNumtab() {
-        return numtab;
-    }
-
-    public int getNbplace() {
-        return nbplace;
-    }
-
-    public static ArrayList<Table> getTables() {
+    public static ArrayList<Restaurant> getRestaurants() {
         Connection co = DBConnection.getConnection();
-        String request = "SELECT * FROM table;";
-        ArrayList<Table> res = new ArrayList<Table>();
+        String request = "SELECT * FROM restaurant;";
+        ArrayList<Restaurant> res = new ArrayList<Restaurant>();
         try {
             assert co != null;
             PreparedStatement prep = co.prepareStatement(request);
             prep.execute();
             ResultSet rs = prep.getResultSet();
             while (rs.next()) {
-                res.add(new Table(rs.getInt("numtab"), rs.getInt("nbplace")));
+                res.add(new Restaurant(rs.getString("nom"), rs.getString("rue"), rs.getInt("numerorue"), rs.getString("ville")));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -44,41 +40,38 @@ public class Table {
     }
 
     /**
-     * VERSION API
-     * @param nomRestaurant
-     * @return
-     * table:
-     *   id
-     *   nb_places
+     * @return Nom_restaurant:
+     * rue
+     * numero_rue
+     * ville
      */
-    public static List<Map<String, String>> getTables(String nomRestaurant) {
+    public static String getCoordonnees() {
         Connection co = DBConnection.getConnection();
-        String request = "SELECT * FROM table where nom_restaurant = ?;";
+        String request = "SELECT nom, rue, numero_rue, ville FROM restaurant;";
 
-        //Map<String, Map<String, String>> tables = new LinkedHashMap<>();
-        List<Map<String, String>> tables = new ArrayList<>();
+        Map<String, Map<String, String>> restaurants = new LinkedHashMap<>();
 
         try {
             assert co != null;
             PreparedStatement prep = co.prepareStatement(request);
-            prep.setString(1, nomRestaurant);
             prep.execute();
-
             ResultSet rs = prep.getResultSet();
-
             while (rs.next()) {
-                Map<String, String> table = new LinkedHashMap<>();
-                table.put("numero", rs.getInt("numtab") + "");
-                table.put("nbplace", rs.getInt("nbplace") + "");
-                tables.add(table);
-            }
+                String nomRestaurant = rs.getString("nom_restaurant");
 
+                Map<String, String> coordonnees = new LinkedHashMap<String, String>();
+                coordonnees.put("rue", rs.getString("rue"));
+                coordonnees.put("numero_rue", rs.getString("numero_rue"));
+                coordonnees.put("ville", rs.getString("ville"));
+
+                restaurants.put(nomRestaurant, coordonnees);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-/*        List<Map<String, Object>> tables = getTables();
-        String json = new Gson().toJson(tables);*/
-        return tables;
+        // Conversion en JSON
+        Gson gson = new Gson();
+        return gson.toJson(restaurants);
     }
 
     public static boolean exist(int numtab) {
@@ -132,22 +125,4 @@ public class Table {
         return false;
     }
 
-    public static Table getTable(int numtab) {
-        Connection co = DBConnection.getConnection();
-        String request = "SELECT * FROM table WHERE numtab = ?;";
-        try {
-            assert co != null;
-            PreparedStatement prep = co.prepareStatement(request);
-            prep.setInt(1, numtab);
-            prep.execute();
-            ResultSet rs = prep.getResultSet();
-            if (rs.next()) {
-                return new Table(rs.getInt("numtab"), rs.getInt("nbplace"));
-            } else
-                throw new TableInexistanteException();
-        } catch (SQLException | TableInexistanteException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 }

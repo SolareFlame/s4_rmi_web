@@ -3,11 +3,11 @@ package database;
 public interface ServiceDatabaseInterface {
 
     /**
-     * a. Consulter les tables disponibles pour une date et heure données.
+     * a. Consulter les table disponibles pour une date et heure données.
      *
      * @param date  la date de la reservation YYYY-MM-DD
      * @param heure l'heure de la reservation JUSTE L'HEURE
-     * @return la liste des tables disponibles
+     * @return la liste des table disponibles
      */
     public String consulterTable(String date, String heure) throws ServeurNonIdentifieException;
 
@@ -43,7 +43,7 @@ public interface ServiceDatabaseInterface {
     public String consulterAffectation() throws ServeurNonIdentifieException, ServeurActionNonPermiseException;
 
     /**
-     * b. Affecter des serveurs à des tables.
+     * b. Affecter des serveurs à des table.
      *
      * @param numServeur le serveur à affecter
      * @param numTable   la table à affecter
@@ -58,6 +58,8 @@ public interface ServiceDatabaseInterface {
      * @return true si le montant a ete mis a jour, false sinon
      */
     public boolean calculerMontantPourEncaissement(int numRes) throws ServeurNonIdentifieException, ServeurActionNonPermiseException;
+
+    public String consulterToutesDonneesRestoNancy() throws ServeurNonIdentifieException, ServeurActionNonPermiseException;
 
 }
 

@@ -90,9 +90,9 @@ class MainDB {
             }
 
             switch (choix) {
-                case 1:  // Consulter les tables disponibles
+                case 1:  // Consulter les table disponibles
                     String date = null, heure = null;
-                    System.out.println(" -- Consulter les tables disponibles -- ");
+                    System.out.println(" -- Consulter les table disponibles -- ");
 
                     date = demanderDate(scanner);
                     heure = demanderHeure(scanner);
@@ -148,8 +148,8 @@ class MainDB {
                     System.out.println(" -- Consulter les affectations des serveurs -- ");
                     System.out.println(s.consulterAffectation());
                     break;
-                case 6:  // affecter des serveurs à des tables
-                    System.out.println(" -- Affecter des serveurs à des tables -- ");
+                case 6:  // affecter des serveurs à des table
+                    System.out.println(" -- Affecter des serveurs à des table -- ");
 
                     int numServ = demanderServeur(scanner);
                     int numTable = demanderTable(scanner);
@@ -194,14 +194,14 @@ class MainDB {
 
     public static void afficherMenu() {
         System.out.println("  --- Action Serveur --- ");
-        System.out.println("1. Consulter les tables disponibles");
+        System.out.println("1. Consulter les table disponibles");
         System.out.println("2. Réserver une table");
         System.out.println("3. Consulter les plats disponibles");
         System.out.println("4. Commander des plat");
 
         System.out.println("  ---  Action Gestionnaire --- ");
         System.out.println("5. Consulter les affectations des serveurs");
-        System.out.println("6. Affecter des serveurs à des tables");
+        System.out.println("6. Affecter des serveurs à des table");
         System.out.println("7. Calculer le montant total d’une réservation consommée (numéro de réservation) et mettre à jour la table RESERVATION pour l’encaissement.");
     }
 

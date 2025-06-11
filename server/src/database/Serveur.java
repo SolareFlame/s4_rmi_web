@@ -1,5 +1,11 @@
 package database;
 
+import proxy.ServiceProxyInterface;
+
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.sql.*;
 import java.util.ArrayList;
 
@@ -34,11 +40,11 @@ public class Serveur implements ServiceDatabaseInterface {
     }
 
     /**
-     * a. Consulter les tables disponibles pour une date et heure données.
+     * a. Consulter les table disponibles pour une date et heure données.
      *
      * @param date  la date de la reservation YYYY-MM-DD
      * @param heure l'heure de la reservation JUSTE L'HEURE
-     * @return la liste des tables disponibles
+     * @return la liste des table disponibles
      */
     public String consulterTable(String date, String heure) throws ServeurNonIdentifieException {
         if (numserv == -1) throw new ServeurNonIdentifieException();
@@ -131,7 +137,7 @@ public class Serveur implements ServiceDatabaseInterface {
             prep.setInt(1, numplat);
             prep.execute();
 
-            if (!Plat.commanderPlat(numplat, qty)){
+            if (!Plat.commanderPlat(numplat, qty)) {
                 System.err.println("Erreur lors de la commande : la diminution de la quantité de plat n'a pas fonctionné");
                 annulerTransaction(co); // annulation de la transaction
                 return false;
@@ -192,7 +198,7 @@ public class Serveur implements ServiceDatabaseInterface {
     }
 
     /**
-     * b. Affecter des serveurs à des tables.
+     * b. Affecter des serveurs à des table.
      *
      * @param numServeur le serveur à affecter
      * @param numTable   la table à affecter
@@ -267,8 +273,14 @@ public class Serveur implements ServiceDatabaseInterface {
         }
     }
 
+    @Override
+    public String consulterToutesDonneesRestoNancy() throws ServeurNonIdentifieException, ServeurActionNonPermiseException {
+        return "";
+    }
+
     /**
      * Début de la transaction
+     *
      * @param co la connexion
      */
     private void debutTransaction(Connection co) {
@@ -282,6 +294,7 @@ public class Serveur implements ServiceDatabaseInterface {
 
     /**
      * Fin de la transaction
+     *
      * @param co la connexion
      */
     private void finTransaction(Connection co) {
@@ -295,6 +308,7 @@ public class Serveur implements ServiceDatabaseInterface {
 
     /**
      * Annulation de la transaction
+     *
      * @param co la connexion
      */
     private void annulerTransaction(Connection co) {
@@ -305,4 +319,49 @@ public class Serveur implements ServiceDatabaseInterface {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Permet d'inscrire notre service à un service central en RMI
+     *
+     * @param ip   l'adresse IP du service central
+     * @param port le port du service central
+     * @return true si l'inscription a réussi, false sinon
+     */
+    public boolean inscrireService(String ip, int port) {
+        try {
+            // get annuaire
+            try {
+                Registry reg = LocateRegistry.getRegistry(ip, port);
+
+                String[] services = reg.list();
+                for (String service : services) {
+                    System.out.println(service);
+                }
+
+                ServiceProxyInterface sp = (ServiceProxyInterface) reg.lookup("proxy");
+                sp.enregisterDB(this);
+
+            } catch (Error e) {
+                System.err.println("erreur");
+                e.printStackTrace();
+            } catch (NotBoundException e) {
+                System.err.println("Service non trouvé dans le registre.");
+                e.printStackTrace();
+            } catch (
+                    RemoteException e) {
+                System.err.println("Erreur de communication RMI.");
+                e.printStackTrace();
+            }
+
+            // donner serveur au SC (passé en param d'une function du SC)
+
+            return true; // Simuler une inscription réussie
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'inscription du service : " + e.getMessage());
+            return false;
+        }
+    }
 }
+
+
+

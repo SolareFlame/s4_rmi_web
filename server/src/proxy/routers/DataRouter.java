@@ -3,6 +3,7 @@ package proxy.routers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import data.ServiceDataInterface;
+import proxy.ServiceProxyInterface;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -10,15 +11,15 @@ import java.nio.charset.StandardCharsets;
 
 public class DataRouter implements HttpHandler {
 
-    public ServiceDataInterface s_d;
+    public ServiceProxyInterface s_p;
 
-    public DataRouter(ServiceDataInterface sData) {
-        this.s_d = sData;
+    public DataRouter(ServiceProxyInterface proxy) {
+        this.s_p = proxy;
     }
 
-    @Override
+                      @Override
     public void handle(HttpExchange exchange) throws IOException {
-        if (s_d == null) {
+        if (s_p.getServiceData() == null) {
             String error = "ServiceData not initialized";
             exchange.sendResponseHeaders(503, error.length());
             exchange.getResponseBody().write(error.getBytes());
@@ -29,7 +30,7 @@ public class DataRouter implements HttpHandler {
 
         if ("GET".equals(exchange.getRequestMethod())) {
             try {
-                String data = s_d.getData();
+                String data = s_p.getServiceData().getData();
                 System.out.println("Data retrieved: " + data);
 
                 byte[] bytes = data.getBytes(StandardCharsets.UTF_8);

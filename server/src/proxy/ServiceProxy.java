@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import config.ConfigLoader;
 import data.ServiceDataInterface;
 import database.ServiceDatabaseInterface;
 import proxy.routers.DataRouter;
@@ -18,7 +19,7 @@ public class ServiceProxy implements ServiceProxyInterface {
     private ServiceDataInterface s_data;
     private HttpServer server;
 
-    public boolean enregisterServiceDB(ServiceDatabaseInterface s_db) {
+    public synchronized boolean enregisterServiceDB(ServiceDatabaseInterface s_db) {
         try {
             this.s_db = s_db;
             System.out.println("Un nouveau service DB s'est connecté");
@@ -34,27 +35,38 @@ public class ServiceProxy implements ServiceProxyInterface {
     }
 
     @Override
-    public void enregisterServiceData(ServiceDataInterface s_data) {
-        this.s_data = s_data;
+    public synchronized boolean enregisterServiceData(ServiceDataInterface s_data) {
+        try {
+            this.s_data = s_data;
+            System.out.println("Un nouveau service Data s'est connecté");
+            return true;
+        } catch (Throwable e){
+            System.err.println("Un service Data n'a pas put se connecter");
+            return false;
+        }
     }
 
-    public ServiceDataInterface getServiceData() {
+    public synchronized ServiceDataInterface getServiceData() {
         return s_data;
     }
 
-    public ServiceDatabaseInterface getServiceDatabase() {
+    public synchronized ServiceDatabaseInterface getServiceDatabase() {
         return s_db;
     }
 
     public void startHttpServer() throws IOException {
-        this.server = HttpServer.create(new InetSocketAddress(8080), 0);
+        ConfigLoader config = new ConfigLoader();
+        int web_port = Integer.parseInt(config.get("port"));
+        System.out.println("Starting HTTP server on port: " + web_port);
+
+        this.server = HttpServer.create(new InetSocketAddress(web_port), 0);
 
         // PARTIE DATABASE RMI
         DatabaseRouter router_db = new DatabaseRouter(s_db);
         server.createContext("/database", router_db);
 
         // PARTIE DATA RMI
-        DataRouter router_d = new DataRouter(s_data);
+        DataRouter router_d = new DataRouter(this);
         server.createContext("/data", router_d);
 
         // PING

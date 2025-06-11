@@ -7,3 +7,6 @@ password=
 url=http://localhost:8080/servicecentral
 ip=1010
 port=8080
+
+[API]
+api.url=https://carto.g-ny.org/data/cifs/cifs_waze_v2.json

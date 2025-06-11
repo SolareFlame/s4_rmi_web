@@ -17,7 +17,7 @@ class MainDB {
     public static void main(String[] args) throws SQLException, ServeurIncorrectException, ServeurActionNonPermiseException, ServeurNonIdentifieException, InterruptedException {
         ConfigLoader config = new ConfigLoader();
         String host = config.get("rmi_host");
-        int port = Integer.parseInt(config.get("rmi_port"));
+        int port = Integer.parseInt(config.get("rmi_registry_port"));
 
         // on créer un serveur agrédité
         Serveur s = null;

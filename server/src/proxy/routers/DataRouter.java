@@ -28,24 +28,24 @@ public class DataRouter implements HttpHandler {
         System.out.println("DataRouter:" + path);
 
         if (s_p.getServiceData() == null) {
-            sendJson(exchange, 503, toErrorJson("Service data is not available"));
+            sendJson(exchange, 503, toErrorJson("Service data is not available", 503));
             return;
         }
 
         if (!"GET".equals(exchange.getRequestMethod())) {
-            sendJson(exchange, 405, toErrorJson("Method Not Allowed: " + exchange.getRequestMethod()));
+            sendJson(exchange, 405, toErrorJson("Method Not Allowed: " + exchange.getRequestMethod(), 405));
             return;
         }
 
         try {
             String data = s_p.getServiceData().getData();
             if (data == null || data.isEmpty()) {
-                sendJson(exchange, 404, toErrorJson("Data not found"));
+                sendJson(exchange, 404, toErrorJson("Data not found", 404));
             }
         } catch (RemoteException e) {
-            sendJson(exchange, 500, toErrorJson("Remote service error: " + e.getMessage()));
+            sendJson(exchange, 500, toErrorJson("Remote service error: " + e.getMessage(),500));
         } catch (Exception e) {
-            sendJson(exchange, 500, toErrorJson("Internal server error: " + e.getMessage()));
+            sendJson(exchange, 500, toErrorJson("Internal server error: " + e.getMessage(),500));
         }
     }
 }

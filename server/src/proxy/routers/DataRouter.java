@@ -6,12 +6,9 @@ import com.sun.net.httpserver.HttpHandler;
 import proxy.ServiceProxyInterface;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
-import java.util.Map;
 
-import static proxy.JSONSender.*;
+import static config.JSONSender.*;
 
 
 public class DataRouter implements HttpHandler {
@@ -28,24 +25,26 @@ public class DataRouter implements HttpHandler {
         System.out.println("DataRouter:" + path);
 
         if (s_p.getServiceData() == null) {
-            sendJson(exchange, 503, toErrorJson("Service data is not available", 503));
+            sendJson(exchange, toErrorJson("Service data is not available", 503));
             return;
         }
 
         if (!"GET".equals(exchange.getRequestMethod())) {
-            sendJson(exchange, 405, toErrorJson("Method Not Allowed: " + exchange.getRequestMethod(), 405));
+            sendJson(exchange, toErrorJson("Method Not Allowed: " + exchange.getRequestMethod(), 405));
             return;
         }
 
         try {
             String data = s_p.getServiceData().getData();
             if (data == null || data.isEmpty()) {
-                sendJson(exchange, 404, toErrorJson("Data not found", 404));
+                sendJson(exchange, toErrorJson("Data not found", 404));
             }
+            sendJson(exchange, toJson(data, 200));
+
         } catch (RemoteException e) {
-            sendJson(exchange, 500, toErrorJson("Remote service error: " + e.getMessage(),500));
+            sendJson(exchange, toErrorJson("Remote service error: " + e.getMessage(),500));
         } catch (Exception e) {
-            sendJson(exchange, 500, toErrorJson("Internal server error: " + e.getMessage(),500));
+            sendJson(exchange, toErrorJson("Internal server error: " + e.getMessage(),500));
         }
     }
 }

@@ -2,11 +2,9 @@ package database;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
 import proxy.ServiceProxyInterface;
 
 import java.io.Serializable;
-import java.lang.reflect.Type;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -17,9 +15,9 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static proxy.JSONSender.*;
+import static config.JSONSender.*;
 
-public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
+public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serializable {
 
     private int numserv = -1;
     private String email;
@@ -28,7 +26,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
     //private int id;
     //private int id_real;
 
-    public Serveur(String email, String mdp) throws ServeurIncorrectException, SQLException {
+    public ServiceDatabase(String email, String mdp) throws ServeurIncorrectException, SQLException {
 
         String request = "SELECT * FROM serveur WHERE email = ? and passwd = ?;";
 
@@ -317,7 +315,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
             ResultSet rs = prep.getResultSet();
             return rs.next();
         } catch (SQLException e) {
-            System.err.println("Serveur : isExist " + e.getMessage());
+            System.err.println("ServiceDatabase : isExist " + e.getMessage());
         }
         return false;
     }
@@ -413,7 +411,10 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
                 }
 
                 ServiceProxyInterface sp = (ServiceProxyInterface) reg.lookup("proxy");
-                if (sp.enregisterServiceDB(this))
+                //pour rester vivant dans la JVM
+                ServiceDatabaseInterface dbService = (ServiceDatabaseInterface) UnicastRemoteObject.exportObject(this, 0);
+
+                if (sp.enregisterServiceDB(dbService))
                     System.out.println("Inscription au service central: succès");
                 else
                     System.out.println("Inscription au service central: echec");

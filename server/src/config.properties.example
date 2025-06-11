@@ -7,3 +7,6 @@ passwordDB=
 urlSC=http://localhost:8080/servicecentral
 ipSC=127.0.0.1
 portSC=1234
+
+[API]
+api.url=https://carto.g-ny.org/data/cifs/cifs_waze_v2.json

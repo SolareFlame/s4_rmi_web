@@ -2,11 +2,12 @@ package proxy;
 import data.ServiceDataInterface;
 import database.ServiceDatabaseInterface;
 
+import java.io.Serializable;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface ServiceProxyInterface extends Remote {
     public boolean enregisterServiceDB(ServiceDatabaseInterface s_db) throws RemoteException;
 
-    public void enregisterData(ServiceDataInterface s_data) throws RemoteException;
+    public void enregisterServiceData(ServiceDataInterface s_data) throws RemoteException;
 }

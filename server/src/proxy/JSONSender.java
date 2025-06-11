@@ -16,8 +16,11 @@ public class JSONSender {
      * @param data Map<String, Object> ou Map<String, String>, etc.
      * @return Chaîne JSON correspondante.
      */
-    public static String toJson(Map<String, ?> data, int statusCode) {
-        return gson.toJson(Map.of("data", data, "status", statusCode));
+    public static String toJson(Object data, int statusCode) {
+        return gson.toJson(Map.of(
+                "data", data,
+                "status", statusCode
+        ));
     }
 
     /**

@@ -16,8 +16,8 @@ public class JSONSender {
      * @param data Map<String, Object> ou Map<String, String>, etc.
      * @return Chaîne JSON correspondante.
      */
-    public static String toJson(Map<String, ?> data) {
-        return gson.toJson(data);
+    public static String toJson(Map<String, ?> data, int statusCode) {
+        return gson.toJson(Map.of("data", data, "status", statusCode));
     }
 
     /**
@@ -26,7 +26,7 @@ public class JSONSender {
      * @return Chaîne JSON {"error": "..."}
      */
     public static String toErrorJson(String message, int StatusCode) {
-        return gson.toJson(Map.of("error", message, "status", StatusCode));
+        return toJson(Map.of("error", message), StatusCode);
     }
 
     public static int getJsonStatusCode(String jsonError) {

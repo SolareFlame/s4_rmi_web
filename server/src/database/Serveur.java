@@ -125,7 +125,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         if (!Table.isBigEnough(numtab, nbpers)) {
             System.out.println("La table n'est pas assez grande");
             //return toJsonReservation("ERROR", "La table n'est pas assez grande");
-            return toErrorJson("La table n'est pas assez grande", 403);
+            return toErrorJson("La table n'est pas assez grande", 400);
         }
         System.out.println("  - Table assez grande");
 
@@ -133,7 +133,6 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
             System.out.println("Table réservée avec succès");
             //return toJsonReservation("OK", "Table réservée avec succès");
             return toJson(Map.of(
-                    "status", "OK",
                     "details", "Table réservée avec succès",
                     "numtab", numtab,
                     "date", date,
@@ -141,9 +140,8 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
                     "nbpers", nbpers,
                     "nom", nom,
                     "prenom", prenom,
-                    "telephone", telephone,
-                    "statusCode", 201
-            ));
+                    "telephone", telephone
+            ), 201);
         } else {
             System.err.println("Erreur lors de la réservation de la table");
             //return toJsonReservation("ERROR", "Erreur lors de la réservation de la table");

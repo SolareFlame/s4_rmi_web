@@ -3,6 +3,7 @@ package database;
 import com.google.gson.Gson;
 import proxy.ServiceProxyInterface;
 
+import java.io.Serializable;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -11,7 +12,7 @@ import java.rmi.registry.Registry;
 import java.sql.*;
 import java.util.ArrayList;
 
-public class Serveur implements ServiceDatabaseInterface, Remote {
+public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
 
     private int numserv = -1;
     private String email;
@@ -44,7 +45,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote {
         lancerService();
 
         // on inscrit notre service au service central
-        inscrireService("ipfactisse", 9999);
+        inscrireService("127.0.0.1", 1234);
     }
 
     /**
@@ -338,34 +339,36 @@ public class Serveur implements ServiceDatabaseInterface, Remote {
 
                 String[] services = reg.list();
                 for (String service : services) {
-                    System.out.println(service);
+                    System.out.println("* " + service);
                 }
 
                 ServiceProxyInterface sp = (ServiceProxyInterface) reg.lookup("proxy");
-                sp.enregisterServiceDB(this);
+                if (sp.enregisterServiceDB(this))
+                    System.out.println("Inscription au service central: succès");
+                else
+                    System.out.println("Inscription au service central: echec");
 
             } catch (Error e) {
                 System.err.println("erreur");
                 e.printStackTrace();
+                return false;
             } catch (NotBoundException e) {
                 System.err.println("Service non trouvé dans le registre.");
                 e.printStackTrace();
-            } catch (
-                    RemoteException e) {
+                return false;
+            } catch (RemoteException e) {
                 System.err.println("Erreur de communication RMI.");
                 e.printStackTrace();
+                return false;
             }
-
-            // donner serveur au SC (passé en param d'une function du SC)
-
-            return true; // Simuler une inscription réussie
+            return true;
         } catch (Exception e) {
             System.err.println("Erreur lors de l'inscription du service : " + e.getMessage());
             return false;
         }
     }
 
-    public void lancerService(){
+    public void lancerService() {
         try {
             int port = 1099;
             Registry registry = LocateRegistry.createRegistry(port);
@@ -385,13 +388,13 @@ public class Serveur implements ServiceDatabaseInterface, Remote {
         }
     }
 
-    public String transformerJSON(Object o){
+    public String transformerJSON(Object o) {
         Gson gson = new Gson();
         return gson.toJson(o);
     }
 
     @Override
-    public String consulterToutesDonneesRestoNancy(){
+    public String consulterToutesDonneesRestoNancy() {
         return transformerJSON(Restaurant.getCoordonnees());
     }
 }

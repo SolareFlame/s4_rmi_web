@@ -10,8 +10,15 @@ public class ServiceProxy implements ServiceProxyInterface {
     private ServiceDatabaseInterface s_db;
     private ServiceDataInterface s_data;
 
-    public void enregisterServiceDB(ServiceDatabaseInterface s_db) {
-        this.s_db = s_db;
+    public boolean enregisterServiceDB(ServiceDatabaseInterface s_db) {
+        try {
+            this.s_db = s_db;
+            System.out.println("Un nouveau service DB s'est connecté");
+            return true;
+        } catch (Throwable e){
+            System.err.println("Un service DB n'a pas put se connecter");
+            return false;
+        }
     }
 
     @Override

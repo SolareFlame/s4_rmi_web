@@ -10,7 +10,7 @@ public interface ServiceDatabaseInterface extends Remote {
     // /database/restaurants/
     public String consulterToutesDonneesRestoNancy() throws RemoteException;
 
-    public String reserverTable(int numtab, String date, String heure) throws RemoteException, ServeurNonIdentifieException;
+    public String demandeReservationTable(String JSONdata) throws RemoteException, ServeurNonIdentifieException;
 
 }
 

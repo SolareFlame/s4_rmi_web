@@ -1,6 +1,7 @@
 package database;
 
 import com.google.gson.Gson;
+import proxy.ApiParser;
 import proxy.ServiceProxyInterface;
 
 import java.io.Serializable;
@@ -12,6 +13,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
 
@@ -80,6 +82,32 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         }
     }
 
+    public String demandeReservationTable(String JSONdata) throws RemoteException, ServeurNonIdentifieException {
+        System.out.println("Appel de reserverTable avec les données : " + JSONdata);
+        Map<String, String> param = ApiParser.parseQuery(JSONdata);
+        int numtab = Integer.parseInt(param.get("numtab"));
+        String date = param.get("date");
+        String heure = param.get("heure");
+
+        // on verifie que le serveur est connecté
+        if (numserv == -1) throw new ServeurNonIdentifieException();
+
+        // on verifie que la table existe
+        if (!Table.exist(numtab)) {
+            return toJsonReservation("ERROR", "La table n'existe pas");
+        }
+
+        // on verifie que la table est disponible
+        if (!Table.isDispoByDate(date, heure, numtab)) {
+            return toJsonReservation("ERROR", "La table n'est pas disponible pour cette date et heure");
+        }
+
+        if (reserverTable(numtab, date, heure))
+            return toJsonReservation("OK", "Table réservée avec succès");
+        else
+            return toJsonReservation("ERROR", "Erreur lors de la réservation de la table");
+    }
+
     /**
      * b. Réserver une table pour une date et heure données.
      *
@@ -87,7 +115,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
      * @param date   la date de la reservation YYYY-MM-DD
      * @param heure  l'heure de la reservation JUSTE L'HEURE
      */
-    public String reserverTable(int numtab, String date, String heure) throws ServeurNonIdentifieException {
+    public boolean reserverTable(int numtab, String date, String heure) throws ServeurNonIdentifieException {
         if (numserv == -1) throw new ServeurNonIdentifieException();
         Connection co = DBConnection.getConnection();
 
@@ -97,11 +125,11 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         if (Reservation.reserver(co, numtab, date, heure)) {
             System.out.println("Réservation réussie");
             finTransaction(co); // fin de la transaction
-            return toJsonReservation("OK", "Table réservée avec succès");
+            return true;
         } else {
             System.err.println("Erreur lors de la réservation");
             annulerTransaction(co); // annulation de la transaction
-            return toJsonReservation("ERROR", "Erreur lors de la réservation");
+            return false;
         }
     }
 

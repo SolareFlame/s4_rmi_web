@@ -45,7 +45,7 @@ public class Restaurant {
      * numero_rue
      * ville
      */
-    public static Map<String, Map<String, String>> getCoordonnees() {
+    public static Map<String, ?> getCoordonnees() {
         Connection co = DBConnection.getConnection();
         String request = "SELECT nom, rue, numero_rue, ville, coordonee FROM restaurant;";
 

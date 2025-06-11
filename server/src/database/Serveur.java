@@ -174,10 +174,6 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         }
     }
 
-    public String toJsonReservation(String statue, String details) {
-        return "{ \"status\": \"" + statue + "\", \"details\": \"" + details + "\" }";
-    }
-
     /**
      * c. Consulter les plats disponibles pour une éventuelle commande.
      *
@@ -463,15 +459,10 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         }
     }
 
-    public String transformerJSON(Object o) {
-        Gson gson = new Gson();
-        return gson.toJson(o);
-    }
-
     @Override
     public String consulterToutesDonneesRestoNancy() throws RemoteException {
         System.out.println("Demande de consultation des données du restaurant Nancy");
-        return transformerJSON(Restaurant.getCoordonnees());
+        return toJson(Restaurant.getCoordonnees(), 200);
     }
 }
 

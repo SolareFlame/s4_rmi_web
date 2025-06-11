@@ -3,8 +3,8 @@ rlDB=jdbc:mysql://localhost:3306/miaam
 usernameDB=root
 passwordDB=
 
-# SERVICE API
-host=localhost
+# SERVICE API (Service Central)
+host=192.168.212.113
 port=8080
 
 # RMI

@@ -15,7 +15,7 @@ public class LancerServiceData {
     public static void main(String[] args) throws Exception {
         ConfigLoader config = new ConfigLoader();
 
-        String ip = config.get("host");
+        String ip = config.get("rmi_host");
         String port = config.get("rmi_registry_port");
 
         System.out.println("Starting RMI lookup on host: " + ip + " and port: " + port);

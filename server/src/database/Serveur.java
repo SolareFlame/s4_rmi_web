@@ -160,7 +160,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
     }
 
     public String toJsonReservation(String statue, String details) {
-        return "{ \"statue\": \"" + statue + "\", \"details\": \"" + details + "\" }";
+        return "{ \"status\": \"" + statue + "\", \"details\": \"" + details + "\" }";
     }
 
     /**

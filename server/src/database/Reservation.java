@@ -121,16 +121,20 @@ public class Reservation {
         }
     }
 
-    public static boolean reserver(Connection co, int numtab, String date, String heure) {
+    public static boolean reserver(Connection co, int numtab, String date, String heure, int nbpers, String nom, String prenom, String telephone) {
 
-        String dateHeure = date + " " + heure + ":00:00";
+        String dateHeure = date + " " + heure;
 
-        String request = "INSERT INTO reservation (numtab, datres) VALUES (?, ?);";
+        String request = "INSERT INTO reservation (numtab, datres, nbpers, nom, prenom, telephone) VALUES (?, ?, ?, ?, ?, ?);";
         try {
             assert co != null;
             PreparedStatement prep = co.prepareStatement(request);
             prep.setInt(1, numtab);
             prep.setString(2, dateHeure);
+            prep.setInt(3, nbpers);
+            prep.setString(4, nom);
+            prep.setString(5, prenom);
+            prep.setString(6, telephone);
             prep.execute();
             return true;
         } catch (SQLException e) {

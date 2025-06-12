@@ -1,52 +1,50 @@
 package proxy.routers;
 
+import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import data.ServiceDataInterface;
 import proxy.ServiceProxyInterface;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.rmi.RemoteException;
+
+import static config.JSONSender.*;
+
 
 public class DataRouter implements HttpHandler {
-
-    public ServiceProxyInterface s_p;
+    private final ServiceProxyInterface s_p;
+    private static final Gson gson = new Gson();
 
     public DataRouter(ServiceProxyInterface proxy) {
         this.s_p = proxy;
     }
 
-                      @Override
+    @Override
     public void handle(HttpExchange exchange) throws IOException {
+        String path = exchange.getRequestURI().getPath();
+        System.out.println("DataRouter:" + path);
+
         if (s_p.getServiceData() == null) {
-            String error = "ServiceData not initialized";
-            exchange.sendResponseHeaders(503, error.length());
-            exchange.getResponseBody().write(error.getBytes());
-            exchange.close();
+            sendJson(exchange, toErrorJson("Service data is not available", 503));
             return;
         }
 
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            sendJson(exchange, toErrorJson("Method Not Allowed: " + exchange.getRequestMethod(), 405));
+            return;
+        }
 
-        if ("GET".equals(exchange.getRequestMethod())) {
-            try {
-                String data = s_p.getServiceData().getData();
-                System.out.println("Data retrieved: " + data);
-
-                byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-                exchange.sendResponseHeaders(200, bytes.length);
-                OutputStream os = exchange.getResponseBody();
-                os.write(bytes);
-                os.flush();
-                os.close();
-            } catch (Exception e) {
-                exchange.sendResponseHeaders(500, -1);
-                e.printStackTrace();
-            } finally {
-                exchange.close();
+        try {
+            String data = s_p.getServiceData().getData();
+            if (data == null || data.isEmpty()) {
+                sendJson(exchange, toErrorJson("Data not found", 404));
             }
-        } else {
-            exchange.sendResponseHeaders(405, -1);
+            sendJson(exchange, toJson(data, 200));
+
+        } catch (RemoteException e) {
+            sendJson(exchange, toErrorJson("Remote service error: " + e.getMessage(),500));
+        } catch (Exception e) {
+            sendJson(exchange, toErrorJson("Internal server error: " + e.getMessage(),500));
         }
     }
 }

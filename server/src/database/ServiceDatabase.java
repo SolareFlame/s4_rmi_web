@@ -1,6 +1,7 @@
 package database;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import proxy.ServiceProxyInterface;
 
 import java.io.Serializable;
@@ -12,8 +13,11 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Map;
 
-public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
+import static config.JSONSender.*;
+
+public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serializable {
 
     private int numserv = -1;
     private String email;
@@ -22,7 +26,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
     //private int id;
     //private int id_real;
 
-    public Serveur(String email, String mdp) throws ServeurIncorrectException, SQLException {
+    public ServiceDatabase(String email, String mdp) throws ServeurIncorrectException, SQLException {
 
         String request = "SELECT * FROM serveur WHERE email = ? and passwd = ?;";
 
@@ -80,6 +84,69 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         }
     }
 
+    public String demandeReservationTable(String JSONdata) throws RemoteException, ServeurNonIdentifieException {
+        System.out.println("Appel de reserverTable avec les données : " + JSONdata);
+        Gson gson = new Gson();
+
+        JsonObject param = gson.fromJson(JSONdata, JsonObject.class); //ApiParser.parseQuery(JSONdata);
+        System.out.println("map : " + param);
+
+        int numtab = param.get("numtab").getAsInt();
+        String date = param.get("date").getAsString();
+        String heure = param.get("heure").getAsString();
+        int nbpers = param.get("nbpers").getAsInt();
+        String nom = param.get("nom").getAsString();
+        String prenom = param.get("prenom").getAsString();
+        String telephone = param.get("telephone").getAsString();
+        System.out.println("numtab : " + numtab + ", date : " + date + ", heure : " + heure + " nbpers : " + nbpers + ", nom : " + nom + ", prenom : " + prenom + ", telephone : " + telephone);
+
+        // on verifie que le serveur est connecté
+        if (numserv == -1) throw new ServeurNonIdentifieException();
+
+        // on verifie que la table existe
+        if (!Table.exist(numtab)) {
+            System.out.println("La table n'existe pas");
+            //return toJsonReservation("ERROR", "La table n'existe pas");
+            return toErrorJson("La table n'existe pas", 404);
+        }
+        System.out.println("  - Table existe");
+
+        // on verifie que la table est disponible
+        if (!Table.isDispoByDate(date, heure, numtab)) {
+            System.out.println("La table n'est pas disponible pour cette date et heure");
+            //return toJsonReservation("ERROR", "La table n'est pas disponible pour cette date et heure");
+            return toErrorJson("La table n'est pas disponible pour cette date et heure", 409);
+        }
+        System.out.println("  - Table est disponible");
+
+        // on verifie que la table puisse accueillir le nombre de personnes
+        if (!Table.isBigEnough(numtab, nbpers)) {
+            System.out.println("La table n'est pas assez grande");
+            //return toJsonReservation("ERROR", "La table n'est pas assez grande");
+            return toErrorJson("La table n'est pas assez grande", 400);
+        }
+        System.out.println("  - Table assez grande");
+
+        if (reserverTable(numtab, date, heure, nbpers, nom, prenom, telephone)) {
+            System.out.println("Table réservée avec succès");
+            //return toJsonReservation("OK", "Table réservée avec succès");
+            return toJson(Map.of(
+                    "details", "Table réservée avec succès",
+                    "numtab", numtab,
+                    "date", date,
+                    "heure", heure,
+                    "nbpers", nbpers,
+                    "nom", nom,
+                    "prenom", prenom,
+                    "telephone", telephone
+            ), 201);
+        } else {
+            System.err.println("Erreur lors de la réservation de la table");
+            //return toJsonReservation("ERROR", "Erreur lors de la réservation de la table");
+            return toErrorJson("Erreur lors de la réservation de la table", 500);
+        }
+    }
+
     /**
      * b. Réserver une table pour une date et heure données.
      *
@@ -87,14 +154,14 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
      * @param date   la date de la reservation YYYY-MM-DD
      * @param heure  l'heure de la reservation JUSTE L'HEURE
      */
-    public boolean reserverTable(int numtab, String date, String heure) throws ServeurNonIdentifieException {
+    public boolean reserverTable(int numtab, String date, String heure, int nbpers, String nom, String prenom, String telephone) throws ServeurNonIdentifieException {
         if (numserv == -1) throw new ServeurNonIdentifieException();
         Connection co = DBConnection.getConnection();
 
         assert co != null;
         debutTransaction(co); // début de la transaction
 
-        if (Reservation.reserver(co, numtab, date, heure)) {
+        if (Reservation.reserver(co, numtab, date, heure, nbpers, nom, prenom, telephone)) {
             System.out.println("Réservation réussie");
             finTransaction(co); // fin de la transaction
             return true;
@@ -248,7 +315,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
             ResultSet rs = prep.getResultSet();
             return rs.next();
         } catch (SQLException e) {
-            System.err.println("Serveur : isExist " + e.getMessage());
+            System.err.println("ServiceDatabase : isExist " + e.getMessage());
         }
         return false;
     }
@@ -290,8 +357,8 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
      */
     private void debutTransaction(Connection co) {
         try {
-            co.commit(); // par sécurité
             co.setAutoCommit(false); // début de la transaction
+            co.commit(); // par sécurité
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -344,7 +411,10 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
                 }
 
                 ServiceProxyInterface sp = (ServiceProxyInterface) reg.lookup("proxy");
-                if (sp.enregisterServiceDB(this))
+                //pour rester vivant dans la JVM
+                ServiceDatabaseInterface dbService = (ServiceDatabaseInterface) UnicastRemoteObject.exportObject(this, 0);
+
+                if (sp.enregisterServiceDB(dbService))
                     System.out.println("Inscription au service central: succès");
                 else
                     System.out.println("Inscription au service central: echec");
@@ -390,14 +460,10 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         }
     }
 
-    public String transformerJSON(Object o) {
-        Gson gson = new Gson();
-        return gson.toJson(o);
-    }
-
     @Override
     public String consulterToutesDonneesRestoNancy() throws RemoteException {
-        return transformerJSON(Restaurant.getCoordonnees());
+        System.out.println("Demande de consultation des données du restaurant Nancy");
+        return toJson(Restaurant.getCoordonnees(), 200);
     }
 }
 

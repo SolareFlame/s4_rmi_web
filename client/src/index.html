@@ -2,167 +2,170 @@
 <html lang="fr">
 
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nancy - Stations VélOstan'lib</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nancy - Stations VélOstan'lib</title>
 
-  <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Font Awesome Icons -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link href="https://cdn.maptiler.com/maptiler-sdk-js/v3.2.0/maptiler-sdk.css" rel="stylesheet" />
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link href="https://cdn.maptiler.com/maptiler-sdk-js/v3.2.0/maptiler-sdk.css" rel="stylesheet"/>
 
-  <!-- CSS personnalisé -->
-  <link rel="stylesheet" href="styles.css">
+    <!-- CSS personnalisé -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-dark">
-  <div class="container">
-    <a class="navbar-brand" href="#">
-      <i class="fas fa-bicycle me-2"></i>
-      Nancy VélOstan'lib
-    </a>
-  </div>
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-bicycle me-2"></i>
+            Nancy VélOstan'lib
+        </a>
+    </div>
 </nav>
 
 
 <section class="hero-section">
-  <div class="container">
-    <div class="row">
-      <div class="col-12 text-center">
-        <h1>
-          <i class="fas fa-map-marked-alt me-3"></i>
-          Carte des stations VélOstan'lib
-        </h1>
-        <p class="lead">
-          Découvrez en temps réel la disponibilité des 38 stations de vélos en libre-service à Nancy
-        </p>
-        <div class="api-info d-inline-block">
-          <small>
-            <i class="fas fa-database me-1"></i>
-            Données fournies par l'API GBFS de Cyclocity
-          </small>
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h1>
+                    <i class="fas fa-map-marked-alt me-3"></i>
+                    Carte des stations VélOstan'lib
+                </h1>
+                <p class="lead">
+                    Découvrez en temps réel la disponibilité des 38 stations de vélos en libre-service à Nancy
+                </p>
+                <div class="api-info d-inline-block">
+                    <small>
+                        <i class="fas fa-database me-1"></i>
+                        Données fournies par l'API GBFS de Cyclocity
+                    </small>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </section>
 
 <!-- Contenu principal -->
 <div class="container-fluid">
-  <div class="row">
-    <!-- Carte -->
-    <div class="col-lg-8 col-md-7">
-      <div class="map-container">
-        <div id="map"></div>
-      </div>
-    </div>
-
-    <!-- Panneau de contrôles -->
-    <div class="col-lg-4 col-md-5">
-      <div class="controls-panel">
-        <h3>
-          <i class="fas fa-cogs"></i>
-          Contrôles
-        </h3>
-
-        <button class="btn btn-primary-custom btn-custom" onclick="reloadMap()">
-          <i class="fas fa-sync-alt me-2"></i>
-          <span id="reload-text">Recharger la carte</span>
-        </button>
-
-        <button class="btn btn-success-custom btn-custom" onclick="geolocateUser()">
-          <i class="fas fa-location-arrow me-2"></i>
-          Ma géolocalisation
-        </button>
-
-        <button class="btn btn-info-custom btn-custom" onclick="showAllStations()">
-          <i class="fas fa-eye me-2"></i>
-          Voir toutes les stations
-        </button>
-
-        <button class="action-btn warning" onclick="routeToNearestStation()" aria-describedby="route-desc" data-tooltip="Itinéraire vers la station la plus proche">
-          <span class="btn-icon" aria-hidden="true">🧭</span>
-          <span class="btn-text">Plus proche</span>
-        </button>
-
-        <button class="action-btn warning" onclick="loadRestaurantsData()" data-tooltip="Charger les restaurants">
-          <div class="btn-bg"></div>
-          <span class="btn-icon">🍽️</span>
-          <span class="btn-text">Restaurants</span>
-          <div class="btn-shimmer"></div>
-        </button>
-
-        <button class="action-btn info" onclick="showAllRestaurants()" data-tooltip="Afficher tous les restaurants">
-          <div class="btn-bg"></div>
-          <span class="btn-icon">🗺️</span>
-          <span class="btn-text">Tout voir</span>
-          <div class="btn-shimmer"></div>
-        </button>
-
-        <!-- Statistiques -->
-        <div class="mt-4">
-          <h4 class="mb-3">
-            <i class="fas fa-chart-bar me-2"></i>
-            Statistiques
-          </h4>
-
-          <div class="stats-card">
-            <div class="stats-number" id="total-stations">38</div>
-            <div class="stats-label">Stations totales</div>
-          </div>
-
-          <div class="stats-card">
-            <div class="stats-number" id="total-bikes">-</div>
-            <div class="stats-label">Vélos disponibles</div>
-          </div>
-
-          <div class="stats-card">
-            <div class="stats-number" id="total-docks">-</div>
-            <div class="stats-label">Places libres</div>
-          </div>
+    <div class="row">
+        <!-- Carte -->
+        <div class="col-lg-8 col-md-7">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
         </div>
 
-        <!-- Légende -->
-        <div class="mt-4">
-          <h5>
-            <i class="fas fa-info-circle me-2"></i>
-            Légende
-          </h5>
-          <div class="api-info">
-            <small>
-              <strong>CB</strong> = Paiement par carte bancaire accepté<br>
-              <i class="fas fa-bicycle text-success"></i> Vélos disponibles<br>
-              <i class="fas fa-parking text-primary"></i> Places de stationnement
-            </small>
-          </div>
+        <!-- Panneau de contrôles -->
+        <div class="col-lg-4 col-md-5">
+            <div class="controls-panel">
+                <h3>
+                    <i class="fas fa-cogs"></i>
+                    Contrôles
+                </h3>
+
+                <button class="btn btn-primary-custom btn-custom" onclick="reloadMap()">
+                    <i class="fas fa-sync-alt me-2"></i>
+                    <span id="reload-text">Recharger la carte</span>
+                </button>
+
+                <button class="btn btn-success-custom btn-custom" onclick="geolocateUser()">
+                    <i class="fas fa-location-arrow me-2"></i>
+                    Ma géolocalisation
+                </button>
+
+                <button class="btn btn-info-custom btn-custom" onclick="showAllStations()">
+                    <i class="fas fa-eye me-2"></i>
+                    Voir toutes les stations
+                </button>
+
+                <button class="action-btn warning" onclick="routeToNearestStation()" aria-describedby="route-desc"
+                        data-tooltip="Itinéraire vers la station la plus proche">
+                    <span class="btn-icon" aria-hidden="true">🧭</span>
+                    <span class="btn-text">Plus proche</span>
+                </button>
+
+                <button class="action-btn warning" onclick="loadRestaurantsData()"
+                        data-tooltip="Charger les restaurants">
+                    <div class="btn-bg"></div>
+                    <span class="btn-icon">🍽️</span>
+                    <span class="btn-text">Restaurants</span>
+                    <div class="btn-shimmer"></div>
+                </button>
+
+                <button class="action-btn info" onclick="showAllRestaurants()"
+                        data-tooltip="Afficher tous les restaurants">
+                    <div class="btn-bg"></div>
+                    <span class="btn-icon">🗺️</span>
+                    <span class="btn-text">Tout voir</span>
+                    <div class="btn-shimmer"></div>
+                </button>
+
+                <!-- Statistiques -->
+                <div class="mt-4">
+                    <h4 class="mb-3">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Statistiques
+                    </h4>
+
+                    <div class="stats-card">
+                        <div class="stats-number" id="total-stations">38</div>
+                        <div class="stats-label">Stations totales</div>
+                    </div>
+
+                    <div class="stats-card">
+                        <div class="stats-number" id="total-bikes">-</div>
+                        <div class="stats-label">Vélos disponibles</div>
+                    </div>
+
+                    <div class="stats-card">
+                        <div class="stats-number" id="total-docks">-</div>
+                        <div class="stats-label">Places libres</div>
+                    </div>
+                </div>
+
+                <!-- Légende -->
+                <div class="mt-4">
+                    <h5>
+                        <i class="fas fa-info-circle me-2"></i>
+                        Légende
+                    </h5>
+                    <div class="api-info">
+                        <small>
+                            <strong>CB</strong> = Paiement par carte bancaire accepté<br>
+                            <i class="fas fa-bicycle text-success"></i> Vélos disponibles<br>
+                            <i class="fas fa-parking text-primary"></i> Places de stationnement
+                        </small>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
 
 <!-- Footer -->
 <footer class="footer">
-  <div class="container">
-    <div class="row">
-      <div class="col-12 text-center">
-        <p class="mb-0">
-          <i class="fas fa-code me-2"></i>
-          Développé avec Bootstrap 5 et Leaflet
-        </p>
-      </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center">
+                <p class="mb-0">
+                    <i class="fas fa-code me-2"></i>
+                    Développé avec Bootstrap 5 et Leaflet
+                </p>
+            </div>
+        </div>
     </div>
-  </div>
 </footer>
 
 <!-- Scripts -->
@@ -170,6 +173,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="config.js"></script>
 <script src="script.js"></script>
 </body>
 

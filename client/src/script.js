@@ -1,32 +1,40 @@
-const key = 'vhRbPodpE7gzeB4RwXuF';
+// Variables globales
 let map;
 let routingControl = null;
 let stationsData = [];
 let markersLayer;
 let restaurantsData = [];
 let restaurantsLayer;
+let incidentsData = [];
+let incidentsLayer;
 
 // Initialisation de la carte
 async function initMap() {
-    const response = await fetch('https://api-adresse.data.gouv.fr/search/?q=Nancy&limit=1');
-    const data = await response.json();
+    try {
+        const apiUrl = `${CONFIG.get('BAN_API_URL')}?q=${CONFIG.get('DEFAULT_CITY')}&limit=${CONFIG.getInt('BAN_API_LIMIT')}`;
+        const response = await fetch(apiUrl);
+        const data = await response.json();
 
-    const coordinates = data.features[0].geometry.coordinates;
-    const lat = coordinates[1]; // Latitude
-    const lon = coordinates[0]; // Longitude
+        const coordinates = data.features[0].geometry.coordinates;
+        const lat = coordinates[1];
+        const lon = coordinates[0];
 
-    // Initialisation de la carte avec les coordonnées obtenues
-    map = L.map('map').setView([lat, lon], 14);
+        map = L.map('map').setView([lat, lon], CONFIG.getInt('DEFAULT_ZOOM'));
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation:', error);
+        map = L.map('map').setView([CONFIG.get('FALLBACK_LAT'), CONFIG.get('FALLBACK_LNG')], CONFIG.getInt('DEFAULT_ZOOM'));
+    }
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    L.tileLayer(CONFIG.get('TILE_URL'), {
+        maxZoom: CONFIG.getInt('MAX_ZOOM'),
+        attribution: CONFIG.get('TILE_ATTRIBUTION')
     }).addTo(map);
 
     markersLayer = L.layerGroup().addTo(map);
 
     loadStationsData();
     loadRestaurantsData();
+    loadIncidentsData();
 }
 
 // Géolocalisation
@@ -36,7 +44,7 @@ function geolocateUser() {
     btn.innerHTML = '<span class="loading-spinner me-2"></span>Localisation...';
     btn.disabled = true;
 
-    map.locate({setView: true, maxZoom: 16});
+    map.locate({setView: true, maxZoom: CONFIG.getInt('LOCATION_MAX_ZOOM')});
 
     map.on('locationfound', function (e) {
         L.marker(e.latlng, {
@@ -74,7 +82,7 @@ function reloadMap() {
     setTimeout(() => {
         btn.innerHTML = `<i class="fas fa-sync-alt me-2"></i>${originalText}`;
         btn.disabled = false;
-    }, 2000);
+    }, CONFIG.getInt('RELOAD_DELAY'));
 }
 
 // Afficher toutes les stations
@@ -113,8 +121,14 @@ function createRestaurantMarker(restaurant) {
         })
     });
 
-    // Contenu du popup
-    const popupContent = `
+    const popupContent = createRestaurantPopupContent(restaurant);
+    marker.bindPopup(popupContent);
+    restaurantsLayer.addLayer(marker);
+}
+
+// Création du contenu du popup restaurant
+function createRestaurantPopupContent(restaurant) {
+    return `
         <div style="min-width: 280px; font-family: var(--font-primary);">
             <div style="
                 background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
@@ -204,14 +218,10 @@ function createRestaurantMarker(restaurant) {
             </div>
         </div>
     `;
-
-    marker.bindPopup(popupContent);
-    restaurantsLayer.addLayer(marker);
 }
 
 // Traitement des données des restaurants
 function processRestaurantsData(restaurants) {
-    // Nettoyer les marqueurs existants
     if (restaurantsLayer) {
         restaurantsLayer.clearLayers();
     } else {
@@ -219,8 +229,6 @@ function processRestaurantsData(restaurants) {
     }
 
     restaurantsData = [];
-    let successCount = 0;
-    let errorCount = 0;
 
     restaurants.forEach((restaurant, index) => {
         try {
@@ -233,26 +241,20 @@ function processRestaurantsData(restaurants) {
 
             restaurantsData.push(restaurantData);
 
-            // Animation progressive des marqueurs
             setTimeout(() => {
                 createRestaurantMarker(restaurantData);
-            }, index * 100);
-
-            successCount++;
+            }, index * CONFIG.getInt('MARKER_ANIMATION_DELAY'));
 
         } catch (error) {
             console.error(`Erreur pour le restaurant ${restaurant.nom}:`, error);
-            errorCount++;
         }
     });
 }
 
-
 // Chargement des données des restaurants
 async function loadRestaurantsData() {
     try {
-
-        const response = await fetch('./restaurants.json');
+        const response = await fetch(CONFIG.get('RESTAURANTS_DATA_FILE'));
 
         if (!response.ok) {
             throw new Error(`Erreur HTTP: ${response.status}`);
@@ -318,28 +320,33 @@ function afficherReservationForm(nomRestaurant, lat, lon) {
     });
 }
 
+// Réservation restaurant
 async function reserverRestaurant(restaurant, nom, prenom, telephone, date) {
-    // Requête POST avec données JSON
-    const response = await fetch('./reservations.json', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            restaurant: restaurant,
-            nom: nom,
-            prenom: prenom,
-            telephone: telephone,
-            date: date
-        })
-    });
+    try {
+        const response = await fetch(CONFIG.get('RESERVATIONS_ENDPOINT'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                restaurant: restaurant,
+                nom: nom,
+                prenom: prenom,
+                telephone: telephone,
+                date: date
+            })
+        });
 
-    const result = await response.json();
+        const result = await response.json();
+        console.log('Réservation effectuée:', result);
+    } catch (error) {
+        console.error('Erreur lors de la réservation:', error);
+    }
 }
 
 // Centrer la carte sur un restaurant
 function centerOnRestaurant(lat, lng) {
-    map.setView([lat, lng], 16, {
+    map.setView([lat, lng], CONFIG.getInt('RESTAURANT_ZOOM'), {
         animate: true,
         duration: 1
     });
@@ -364,11 +371,15 @@ function routeToRestaurant(restaurantName, lat, lng) {
             createMarker: function () { return null; }
         }).addTo(map);
 
-        showToast(`Itinéraire vers ${restaurantName} calculé !`, 'success', '🧭');
+        if (typeof showToast === 'function') {
+            showToast(`Itinéraire vers ${restaurantName} calculé !`, 'success', '🧭');
+        }
     });
 
     map.once('locationerror', function (e) {
-        showToast('Géolocalisation impossible : ' + e.message, 'error', '❌');
+        if (typeof showToast === 'function') {
+            showToast('Géolocalisation impossible : ' + e.message, 'error', '❌');
+        }
     });
 }
 
@@ -377,9 +388,13 @@ function showAllRestaurants() {
     if (restaurantsData.length > 0) {
         const group = new L.featureGroup(Object.values(restaurantsLayer._layers));
         map.fitBounds(group.getBounds().pad(0.1));
-        showToast(`${restaurantsData.length} restaurants affichés`, 'info', '🍽️');
+        if (typeof showToast === 'function') {
+            showToast(`${restaurantsData.length} restaurants affichés`, 'info', '🍽️');
+        }
     } else {
-        showToast('Aucun restaurant à afficher', 'warning', '⚠️');
+        if (typeof showToast === 'function') {
+            showToast('Aucun restaurant à afficher', 'warning', '⚠️');
+        }
     }
 }
 
@@ -387,31 +402,32 @@ function showAllRestaurants() {
 function toggleRestaurants() {
     if (map.hasLayer(restaurantsLayer)) {
         map.removeLayer(restaurantsLayer);
-        showToast('Restaurants masqués', 'info', '👁️‍🗨️');
+        if (typeof showToast === 'function') {
+            showToast('Restaurants masqués', 'info', '👁️‍🗨️');
+        }
     } else {
         map.addLayer(restaurantsLayer);
-        showToast('Restaurants affichés', 'info', '👁️');
+        if (typeof showToast === 'function') {
+            showToast('Restaurants affichés', 'info', '👁️');
+        }
     }
 }
-
 
 // Chargement des données des stations
 async function loadStationsData() {
     try {
-        // Récupération de l'URL des stations
-        const gbfsResponse = await fetch("https://api.cyclocity.fr/contracts/nancy/gbfs/gbfs.json");
+        const gbfsUrl = `${CONFIG.get('CYCLOCITY_BASE_URL')}${CONFIG.get('CYCLOCITY_GBFS_ENDPOINT')}`;
+        const gbfsResponse = await fetch(gbfsUrl);
         const gbfsData = await gbfsResponse.json();
         const stationsUrl = gbfsData.data.fr.feeds.find(feed => feed.name === "station_information").url;
 
-        // Récupération des informations des stations
         const stationsResponse = await fetch(stationsUrl);
         const stationsInfo = await stationsResponse.json();
 
-        // Récupération du statut des stations
-        const statusResponse = await fetch("https://api.cyclocity.fr/contracts/nancy/gbfs/v2/station_status.json");
+        const statusUrl = `${CONFIG.get('CYCLOCITY_BASE_URL')}${CONFIG.get('CYCLOCITY_STATUS_ENDPOINT')}`;
+        const statusResponse = await fetch(statusUrl);
         const statusData = await statusResponse.json();
 
-        // Traitement des données
         processStationsData(stationsInfo.data.stations, statusData.data.stations);
 
     } catch (error) {
@@ -448,7 +464,6 @@ function processStationsData(stations, statuses) {
         }
     });
 
-    // Mise à jour des statistiques
     updateStats(totalBikes, totalDocks);
 }
 
@@ -457,15 +472,14 @@ function createStationMarker(station) {
     const cbText = station.rental_methods && station.rental_methods.includes('creditcard') ? ' (CB)' : '';
     const isOperational = station.is_renting && station.is_returning;
 
-    // Couleur du marqueur selon la disponibilité
-    let markerColor = '#6c757d'; // Gris par défaut
+    let markerColor = '#6c757d';
     if (isOperational) {
         if (station.bikes_available === 0) {
-            markerColor = '#dc3545'; // Rouge - vide
+            markerColor = '#dc3545';
         } else if (station.bikes_available <= 3) {
-            markerColor = '#ffc107'; // Jaune - peu de vélos
+            markerColor = '#ffc107';
         } else {
-            markerColor = '#198754'; // Vert - disponible
+            markerColor = '#198754';
         }
     }
 
@@ -473,72 +487,180 @@ function createStationMarker(station) {
         icon: L.divIcon({
             className: 'custom-station-marker',
             html: `
-                        <div style="
-                            background: ${markerColor};
-                            width: 30px;
-                            height: 30px;
-                            border-radius: 50%;
-                            border: 3px solid white;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                            font-size: 12px;
-                            font-weight: bold;
-                            color: white;
-                        ">
-                            ${station.bikes_available}
-                        </div>
-                    `,
+                <div style="
+                    background: ${markerColor};
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    font-size: 12px;
+                    font-weight: bold;
+                    color: white;
+                ">
+                    ${station.bikes_available}
+                </div>
+            `,
             iconSize: [30, 30],
             iconAnchor: [15, 15]
         })
     });
 
-    const popupContent = `
-                <div style="min-width: 250px;">
-                    <h5 style="margin-bottom: 10px; color: #212529;">
-                        <i class="fas fa-bicycle me-2"></i>
-                        ${station.name}${cbText}
-                    </h5>
-                    <p style="margin-bottom: 10px; color: #6c757d;">
-                        <i class="fas fa-map-marker-alt me-2"></i>
-                        ${station.address || 'Adresse non renseignée'}
-                    </p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
-                        <div style="text-align: center; padding: 10px; background: #e8f5e8; border-radius: 8px;">
-                            <div style="font-size: 1.5em; font-weight: bold; color: #198754;">
-                                ${station.bikes_available}
-                            </div>
-                            <small style="color: #198754;">Vélos disponibles</small>
-                        </div>
-                        <div style="text-align: center; padding: 10px; background: #e3f2fd; border-radius: 8px;">
-                            <div style="font-size: 1.5em; font-weight: bold; color: #1976d2;">
-                                ${station.docks_available}
-                            </div>
-                            <small style="color: #1976d2;">Places libres</small>
-                        </div>
-                    </div>
-                    <div style="text-align: center; margin-top: 10px;">
-                        <span style="
-                            padding: 5px 10px;
-                            border-radius: 15px;
-                            font-size: 0.8em;
-                            font-weight: bold;
-                            background: ${isOperational ? '#d4edda' : '#f8d7da'};
-                            color: ${isOperational ? '#155724' : '#721c24'};
-                        ">
-                            ${isOperational ? 'Station opérationnelle' : 'Station hors service'}
-                        </span>
-                    </div>
-                    <small style="display: block; text-align: center; margin-top: 8px; color: #6c757d;">
-                        Capacité totale: ${station.capacity} places
-                    </small>
-                </div>
-            `;
-
+    const popupContent = createStationPopupContent(station, cbText, isOperational);
     marker.bindPopup(popupContent);
     markersLayer.addLayer(marker);
+}
+
+// Création du contenu du popup station
+function createStationPopupContent(station, cbText, isOperational) {
+    return `
+        <div style="min-width: 250px;">
+            <h5 style="margin-bottom: 10px; color: #212529;">
+                <i class="fas fa-bicycle me-2"></i>
+                ${station.name}${cbText}
+            </h5>
+            <p style="margin-bottom: 10px; color: #6c757d;">
+                <i class="fas fa-map-marker-alt me-2"></i>
+                ${station.address || 'Adresse non renseignée'}
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
+                <div style="text-align: center; padding: 10px; background: #e8f5e8; border-radius: 8px;">
+                    <div style="font-size: 1.5em; font-weight: bold; color: #198754;">
+                        ${station.bikes_available}
+                    </div>
+                    <small style="color: #198754;">Vélos disponibles</small>
+                </div>
+                <div style="text-align: center; padding: 10px; background: #e3f2fd; border-radius: 8px;">
+                    <div style="font-size: 1.5em; font-weight: bold; color: #1976d2;">
+                        ${station.docks_available}
+                    </div>
+                    <small style="color: #1976d2;">Places libres</small>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 10px;">
+                <span style="
+                    padding: 5px 10px;
+                    border-radius: 15px;
+                    font-size: 0.8em;
+                    font-weight: bold;
+                    background: ${isOperational ? '#d4edda' : '#f8d7da'};
+                    color: ${isOperational ? '#155724' : '#721c24'};
+                ">
+                    ${isOperational ? 'Station opérationnelle' : 'Station hors service'}
+                </span>
+            </div>
+            <small style="display: block; text-align: center; margin-top: 8px; color: #6c757d;">
+                Capacité totale: ${station.capacity} places
+            </small>
+        </div>
+    `;
+}
+
+async function loadIncidentsData() {
+    try {
+        const response = await fetch(CONFIG.get('INCIDENTS_API_URL'));
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+        const data = await response.json();
+
+        // Vérifier le format des données reçues
+        if (Array.isArray(data)) {
+            // Si data est directement un tableau
+            processIncidentsData(data);
+        } else if (data.incidents && Array.isArray(data.incidents)) {
+            // Si data contient une propriété 'incidents' qui est un tableau
+            processIncidentsData(data.incidents);
+        } else {
+            console.error('Format inattendu des données incidents:', data);
+            console.log('Structure reçue:', Object.keys(data));
+        }
+    } catch (error) {
+        console.error("Erreur lors du chargement des incidents:", error);
+    }
+}
+
+function createIncidentMarker(incident) {
+    const lat = incident.location.polyline.split(' ')[0];
+    const lon = incident.location.polyline.split(' ')[1];
+    const marker = L.marker([lat, lon], {
+        icon: L.divIcon({
+            className: 'custom-incident-marker',
+            html: `
+                <div style="
+                    background: rgba(255, 0, 0, 0.8);
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    color: white;
+                    font-size: 16px;
+                ">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            `,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        })
+    });
+
+    const popupContent = createIncidentPopupContent(incident);
+    marker.bindPopup(popupContent);
+    incidentsLayer.addLayer(marker);
+}
+
+function createIncidentPopupContent(incident) {
+    return `
+        <div style="min-width: 250px;">
+            <h5 style="margin-bottom: 10px; color: #212529;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Incident signalé
+            </h5>
+            <p style="margin-bottom: 10px; color: #6c757d;">
+                <strong>Type :</strong> ${incident.type || 'Inconnu'}
+            </p>
+            <p style="margin-bottom: 10px; color: #6c757d;">
+                <strong>Description :</strong> ${incident.description || 'Aucune description fournie'}
+            </p>
+            <p style="margin-bottom: 10px; color: #6c757d;">
+                <strong>Date :</strong> ${new Date(incident.date).toLocaleString() || 'Inconnue'}
+            </p>
+        </div>
+    `;
+}
+
+function processIncidentsData(incidents) {
+    if (incidentsLayer) {
+        incidentsLayer.clearLayers();
+    } else {
+        incidentsLayer = L.layerGroup().addTo(map);
+    }
+
+    incidentsData = [];
+
+    incidents.forEach((incident, index) => {
+        try {
+            const incidentData = {
+                ...incident,
+                location: incident.location || { polyline: [CONFIG.get('FALLBACK_LAT'), CONFIG.get('FALLBACK_LNG')] }
+            };
+
+            incidentsData.push(incidentData);
+
+            setTimeout(() => {
+                createIncidentMarker(incidentData);
+            }, index * CONFIG.getInt('MARKER_ANIMATION_DELAY'));
+
+        } catch (error) {
+            console.error(`Erreur pour l'incident ${index}:`, error);
+        }
+    });
 }
 
 
@@ -566,14 +688,13 @@ function findNearestStation(latlng) {
 
 // Fonction pour tracer un itinéraire vers la station la plus proche
 function routeToNearestStation() {
-    map.locate({setView: false, maxZoom: 16});
+    map.locate({setView: false, maxZoom: CONFIG.getInt('LOCATION_MAX_ZOOM')});
 
     map.on('locationfound', function (e) {
         if (routingControl) {
             map.removeControl(routingControl);
         }
 
-        // Trouver la station la plus proche
         const nearestStation = findNearestStation(e.latlng);
         if (!nearestStation) {
             alert('Aucune station trouvée à proximité.');
@@ -587,12 +708,11 @@ function routeToNearestStation() {
             ],
             routeWhileDragging: true,
             geocoder: L.Control.Geocoder.nominatim(),
-            createMarker: function () { return null; } // Ne pas créer de marqueur par défaut
+            createMarker: function () { return null; }
         }).addTo(map);
 
         console.log('Itinéraire vers la station la plus proche tracé avec succès.');
 
-        // Afficher le popup de la station la plus proche
         const popupContent = `
             <strong><i class="fas fa-bicycle me-1"></i>Station la plus proche :</strong><br>
             ${nearestStation.name} (${nearestStation.bikes_available} vélos disponibles)

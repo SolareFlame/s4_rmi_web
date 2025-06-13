@@ -5,9 +5,7 @@ import data.ServiceDataInterface;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.*;
 import java.rmi.RemoteException;
 
 import config.ConfigLoader;
@@ -24,6 +22,8 @@ public class ServiceData implements ServiceDataInterface {
 
     public String getData() throws IOException {
         URL url = new URL(apiUrl);
+        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("www-cache", 3128));
+
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Accept", "application/json");

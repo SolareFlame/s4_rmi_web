@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
+import config.CORSFilter;
 import config.ConfigLoader;
 import config.SSLgen;
 import data.ServiceDataInterface;
@@ -69,35 +70,20 @@ public class ServiceProxy implements ServiceProxyInterface {
         this.server = HttpsServer.create(new InetSocketAddress(web_port), 0);
         server.setHttpsConfigurator(new HttpsConfigurator(sslContext));
 
-        // PARTIE DATABASE RMI
         DatabaseRouter router_db = new DatabaseRouter(this);
-        server.createContext("/database", router_db);
-
-        // PARTIE DATA RMI
         DataRouter router_d = new DataRouter(this);
-        server.createContext("/data", router_d);
 
-        // PING
+        CORSFilter corsFilter = new CORSFilter();
+
+        server.createContext("/database", router_db).getFilters().add(corsFilter);
+        server.createContext("/data", router_d).getFilters().add(corsFilter);
         server.createContext("/ping", exchange -> {
             String response = "Pong";
-
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(204, -1);
-                exchange.close();
-                return;
-            }
-
             byte[] bytes = response.getBytes();
             exchange.sendResponseHeaders(200, bytes.length);
             exchange.getResponseBody().write(bytes);
             exchange.close();
-        });
-
-
+        }).getFilters().add(corsFilter);
         server.start();
 
         System.out.println("Server started");

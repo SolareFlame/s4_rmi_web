@@ -1,6 +1,9 @@
-package proxy;
+package config;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
@@ -18,9 +21,18 @@ public class JSONSender {
      */
     public static String toJson(Object data, int statusCode) {
         return gson.toJson(Map.of(
-                "data", data,
-                "status", statusCode
+                "status", statusCode,
+                "data", data
         ));
+    }
+
+    public static String toJson(String jsonData, int statusCode) {
+        JsonObject wrapper = new JsonObject();
+
+        wrapper.addProperty("status", statusCode);
+        wrapper.add("data", JsonParser.parseString(jsonData));
+
+        return gson.toJson(wrapper);
     }
 
     /**
@@ -47,11 +59,21 @@ public class JSONSender {
     /**
      * Envoie une chaîne déjà formatée en JSON.
      * @param exchange L'échange HTTP.
+     * @param jsonBody Corps JSON (doit être une chaîne JSON valide).
+     * @throws IOException
+     */
+    public static void sendJson(HttpExchange exchange, String jsonBody) throws IOException {
+        sendJson(exchange, jsonBody, getJsonStatusCode(jsonBody));
+    }
+
+    /**
+     * Envoie une chaîne déjà formatée en JSON.
+     * @param exchange L'échange HTTP.
      * @param statusCode Code HTTP (200, 404, etc.).
      * @param jsonBody Corps JSON (doit être une chaîne JSON valide).
      * @throws IOException
      */
-    public static void sendJson(HttpExchange exchange, int statusCode, String jsonBody) throws IOException {
+    public static void sendJson(HttpExchange exchange, String jsonBody, int statusCode) throws IOException {
         byte[] responseBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.sendResponseHeaders(statusCode, responseBytes.length);

@@ -13,26 +13,25 @@ import java.util.Scanner;
  * cette classe a juste pour objectif de verifier les noms des methodes
  */
 
-class MainDB {
+class LancerServiceDatabase {
     public static void main(String[] args) throws SQLException, ServeurIncorrectException, ServeurActionNonPermiseException, ServeurNonIdentifieException, InterruptedException {
         ConfigLoader config = new ConfigLoader();
         String host = config.get("rmi_host");
         int port = Integer.parseInt(config.get("rmi_registry_port"));
 
         // on créer un serveur agrédité
-        Serveur s = null;
+        ServiceDatabase s = null;
         boolean isConnecte = false;
         try {
-            s = new Serveur("user1@mail.com", "$fg#;mdp$$$$$0");
+            s = new ServiceDatabase("user1@mail.com", "$fg#;mdp$$$$$0");
             isConnecte = true;
         } catch (ServeurIncorrectException e) {
             System.out.println("Connexion échoué : mot de passe incorrect");
         }
 
         if (isConnecte) {
-            // on lance notre service dans notre annuaire
+            // test connexion bdd
             System.out.println(s.consulterAffectation());
-            s.lancerService();
 
             // on inscrit notre service au service central
             s.inscrireService(host, port);
@@ -57,7 +56,7 @@ class MainDB {
             System.out.print("Entrez votre mot de passe : ");
             mdp = scanner.nextLine();
             try {
-                s = new Serveur(mail, mdp);
+                s = new ServiceDatabase(mail, mdp);
                 connecte = true;
             } catch (ServeurIncorrectException e) {
                 System.out.println("Adresse ou mot de passe incorrect");
@@ -193,7 +192,7 @@ class MainDB {
     }
 
     public static void afficherMenu() {
-        System.out.println("  --- Action Serveur --- ");
+        System.out.println("  --- Action ServiceDatabase --- ");
         System.out.println("1. Consulter les table disponibles");
         System.out.println("2. Réserver une table");
         System.out.println("3. Consulter les plats disponibles");
@@ -212,8 +211,8 @@ class MainDB {
             System.out.print("Entrez le numéro du serveur : ");
             try {
                 numServ_entree = scanner.nextInt();
-                if (!Serveur.isExist(numServ_entree)) {
-                    System.out.println("Serveur inexistant");
+                if (!ServiceDatabase.isExist(numServ_entree)) {
+                    System.out.println("ServiceDatabase inexistant");
                 } else {
                     numServValide = true;
                 }

@@ -14,3 +14,7 @@ rmi_service_name=proxy
 
 # EXTERNAL API
 api.url=https://carto.g-ny.org/data/cifs/cifs_waze_v2.json
+
+# SLL
+keystore_path=
+keystore_password=

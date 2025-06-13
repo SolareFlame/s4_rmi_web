@@ -24,7 +24,7 @@ public class ServiceData implements ServiceDataInterface {
         URL url = new URL(apiUrl);
         Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("www-cache", 3128));
 
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Accept", "application/json");
         conn.setRequestProperty("User-Agent", "Mozilla/5.0");

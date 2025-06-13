@@ -38,6 +38,14 @@ public class ServiceData implements ServiceDataInterface {
 
             System.out.println("Data received: " + jsonBuilder.toString());
             return jsonBuilder.toString();
+
+        } catch (MalformedURLException e) {
+            System.err.println("Invalid URL: " + e.getMessage());
+            throw new RemoteException("Invalid URL for API: " + apiUrl, e);
+
+        } catch (IOException e) {
+            System.err.println("Error reading data from API: " + e.getMessage());
+            throw new RemoteException("Error reading data from API", e);
         }
     }
 }

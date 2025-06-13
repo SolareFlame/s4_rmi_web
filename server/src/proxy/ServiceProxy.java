@@ -1,23 +1,32 @@
 package proxy;
 
 import com.google.gson.Gson;
-import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsServer;
+import com.sun.net.httpserver.HttpsConfigurator;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsServer;
+import config.CORSFilter;
 import config.ConfigLoader;
+import config.SSLgen;
 import data.ServiceDataInterface;
 import database.ServiceDatabaseInterface;
 import proxy.routers.DataRouter;
 import proxy.routers.DatabaseRouter;
+
+import javax.net.ssl.SSLContext;
 import java.rmi.RemoteException;
+
+import static config.SSLgen.createSSLContext;
 
 public class ServiceProxy implements ServiceProxyInterface {
 
     private ServiceDatabaseInterface s_db;
     private ServiceDataInterface s_data;
-    private HttpServer server;
+    private HttpsServer server;
 
     public synchronized boolean enregisterServiceDB(ServiceDatabaseInterface s_db) {
         try {
@@ -50,30 +59,31 @@ public class ServiceProxy implements ServiceProxyInterface {
         return s_db;
     }
 
-    public void startHttpServer() throws IOException {
+    public void startHttpServer() throws Exception {
         ConfigLoader config = new ConfigLoader();
         int web_port = Integer.parseInt(config.get("port"));
         System.out.println("Starting HTTP server on port: " + web_port);
 
-        this.server = HttpServer.create(new InetSocketAddress(web_port), 0);
+        // Configuration SSL
+        SSLContext sslContext = createSSLContext(config.get("keystore_path"), config.get("keystore_password"));
 
-        // PARTIE DATABASE RMI
+        this.server = HttpsServer.create(new InetSocketAddress(web_port), 0);
+        server.setHttpsConfigurator(new HttpsConfigurator(sslContext));
+
         DatabaseRouter router_db = new DatabaseRouter(this);
-        server.createContext("/database", router_db);
-
-        // PARTIE DATA RMI
         DataRouter router_d = new DataRouter(this);
-        server.createContext("/data", router_d);
 
-        // PING
+        CORSFilter corsFilter = new CORSFilter();
+
+        server.createContext("/database", router_db).getFilters().add(corsFilter);
+        server.createContext("/data", router_d).getFilters().add(corsFilter);
         server.createContext("/ping", exchange -> {
             String response = "Pong";
-            exchange.sendResponseHeaders(200, response.length());
-            exchange.getResponseBody().write(response.getBytes());
+            byte[] bytes = response.getBytes();
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
             exchange.close();
-        });
-
-
+        }).getFilters().add(corsFilter);
         server.start();
 
         System.out.println("Server started");

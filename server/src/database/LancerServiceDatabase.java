@@ -3,6 +3,11 @@ package database;
 import config.ConfigLoader;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.InputMismatchException;
+import java.util.Scanner;
 
 /**
  * cette classe a juste pour objectif de verifier les noms des methodes
@@ -25,7 +30,10 @@ class LancerServiceDatabase {
         }
 
         if (isConnecte) {
+            // test connexion bdd
+            System.out.println(s.consulterAffectation());
 
+            // on inscrit notre service au service central
             s.inscrireService(host, port);
         }
 

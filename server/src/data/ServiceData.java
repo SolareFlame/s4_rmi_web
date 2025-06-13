@@ -5,9 +5,7 @@ import data.ServiceDataInterface;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.*;
 import java.rmi.RemoteException;
 
 import config.ConfigLoader;
@@ -24,10 +22,20 @@ public class ServiceData implements ServiceDataInterface {
 
     public String getData() throws IOException {
         URL url = new URL(apiUrl);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("www-cache", 3128));
+
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
         conn.setRequestMethod("GET");
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
 
         System.out.println("Data requested");
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            System.err.println("Failed to fetch data from API. Response code: " + responseCode);
+            throw new RemoteException("Failed to fetch data from API. Response code: " + responseCode);
+        }
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             StringBuilder jsonBuilder = new StringBuilder();
@@ -38,6 +46,14 @@ public class ServiceData implements ServiceDataInterface {
 
             System.out.println("Data received: " + jsonBuilder.toString());
             return jsonBuilder.toString();
+
+        } catch (MalformedURLException e) {
+            System.err.println("Invalid URL: " + e.getMessage());
+            throw new RemoteException("Invalid URL for API: " + apiUrl, e);
+
+        } catch (IOException e) {
+            System.err.println("Error reading data from API: " + e.getMessage());
+            throw new RemoteException("Error reading data from API", e);
         }
     }
 }

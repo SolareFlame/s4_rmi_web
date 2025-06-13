@@ -1,24 +1,31 @@
 package proxy;
 
 import com.google.gson.Gson;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsServer;
+import com.sun.net.httpserver.HttpsConfigurator;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsServer;
 import config.ConfigLoader;
+import config.SSLgen;
 import data.ServiceDataInterface;
 import database.ServiceDatabaseInterface;
 import proxy.routers.DataRouter;
 import proxy.routers.DatabaseRouter;
+
+import javax.net.ssl.SSLContext;
 import java.rmi.RemoteException;
+
+import static config.SSLgen.createSSLContext;
 
 public class ServiceProxy implements ServiceProxyInterface {
 
     private ServiceDatabaseInterface s_db;
     private ServiceDataInterface s_data;
-    private HttpServer server;
+    private HttpsServer server;
 
     public synchronized boolean enregisterServiceDB(ServiceDatabaseInterface s_db) {
         try {
@@ -51,12 +58,16 @@ public class ServiceProxy implements ServiceProxyInterface {
         return s_db;
     }
 
-    public void startHttpServer() throws IOException {
+    public void startHttpServer() throws Exception {
         ConfigLoader config = new ConfigLoader();
         int web_port = Integer.parseInt(config.get("port"));
         System.out.println("Starting HTTP server on port: " + web_port);
 
-        this.server = HttpServer.create(new InetSocketAddress(web_port), 0);
+        // Configuration SSL
+        SSLContext sslContext = createSSLContext(config.get("keystore_path"), config.get("keystore_password"));
+
+        this.server = HttpsServer.create(new InetSocketAddress(web_port), 0);
+        server.setHttpsConfigurator(new HttpsConfigurator(sslContext));
 
         // PARTIE DATABASE RMI
         DatabaseRouter router_db = new DatabaseRouter(this);
@@ -67,18 +78,14 @@ public class ServiceProxy implements ServiceProxyInterface {
         server.createContext("/data", router_d);
 
         // PING
-        server.createContext("/ping", (HttpExchange exchange) -> {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(204, -1);
-                return;
-            }
-
+        server.createContext("/ping", exchange -> {
             String response = "Pong";
-            exchange.sendResponseHeaders(200, response.getBytes().length);
+
+            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+            exchange.sendResponseHeaders(200, response.length());
             exchange.getResponseBody().write(response.getBytes());
             exchange.close();
         });

@@ -1,11 +1,22 @@
 const key = 'vhRbPodpE7gzeB4RwXuF';
 let map;
+let routingControl = null;
 let stationsData = [];
 let markersLayer;
+let restaurantsData = [];
+let restaurantsLayer;
 
 // Initialisation de la carte
-function initMap() {
-    map = L.map('map').setView([48.6937223, 6.1834097], 14);
+async function initMap() {
+    const response = await fetch('https://api-adresse.data.gouv.fr/search/?q=Nancy&limit=1');
+    const data = await response.json();
+
+    const coordinates = data.features[0].geometry.coordinates;
+    const lat = coordinates[1]; // Latitude
+    const lon = coordinates[0]; // Longitude
+
+    // Initialisation de la carte avec les coordonnées obtenues
+    map = L.map('map').setView([lat, lon], 14);
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -15,6 +26,7 @@ function initMap() {
     markersLayer = L.layerGroup().addTo(map);
 
     loadStationsData();
+    loadRestaurantsData();
 }
 
 // Géolocalisation
@@ -72,6 +84,316 @@ function showAllStations() {
         map.fitBounds(group.getBounds().pad(0.1));
     }
 }
+
+// Création d'un marqueur pour un restaurant
+function createRestaurantMarker(restaurant) {
+    const marker = L.marker([restaurant.lat, restaurant.lng], {
+        icon: L.divIcon({
+            className: 'custom-restaurant-marker',
+            html: `
+                <div style="
+                    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+                    width: 35px;
+                    height: 35px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+                    font-size: 16px;
+                    color: white;
+                    transition: all 0.3s ease;
+                ">
+                    🍽️
+                </div>
+            `,
+            iconSize: [35, 35],
+            iconAnchor: [17.5, 17.5]
+        })
+    });
+
+    // Contenu du popup
+    const popupContent = `
+        <div style="min-width: 280px; font-family: var(--font-primary);">
+            <div style="
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+                color: white;
+                padding: 15px;
+                margin: -10px -10px 15px -10px;
+                border-radius: 8px 8px 0 0;
+                text-align: center;
+            ">
+                <h4 style="margin: 0; font-size: 1.2em; font-weight: 700;">
+                    🍽️ ${restaurant.nom}
+                </h4>
+            </div>
+            
+            <div style="padding: 0 5px;">
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 12px;
+                    padding: 10px;
+                    background: #f8f9fa;
+                    border-radius: 6px;
+                ">
+                    <span style="font-size: 1.2em;">📍</span>
+                    <div>
+                        <div style="font-weight: 600; color: #2c3e50;">
+                            ${restaurant.address}
+                        </div>
+                        <small style="color: #7f8c8d;">
+                            ${restaurant.coordonee}
+                        </small>
+                    </div>
+                </div>
+                
+                <div style="
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                    margin-top: 15px;
+                ">
+                    <button onclick="routeToRestaurant('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lng})" 
+                            style="
+                                background: var(--gradient-primary);
+                                color: white;
+                                border: none;
+                                padding: 8px 12px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 0.85em;
+                                font-weight: 600;
+                                transition: all 0.3s ease;
+                            ">
+                        🧭 Itinéraire
+                    </button>
+                    
+                    <button onclick="centerOnRestaurant(${restaurant.lat}, ${restaurant.lng})" 
+                            style="
+                                background: var(--gradient-secondary);
+                                color: white;
+                                border: none;
+                                padding: 8px 12px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 0.85em;
+                                font-weight: 600;
+                                transition: all 0.3s ease;
+                            ">
+                        🎯 Centrer
+                    </button>
+                    
+                    <button onclick="afficherReservationForm('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lng})"
+                            style="
+                                background: var(--gradient-accent);
+                                color: white;
+                                border: none;
+                                padding: 8px 12px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 0.85em;
+                                font-weight: 600;
+                                transition: all 0.3s ease;
+                            ">
+                        📅 Réserver
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    marker.bindPopup(popupContent);
+    restaurantsLayer.addLayer(marker);
+}
+
+// Traitement des données des restaurants
+function processRestaurantsData(restaurants) {
+    // Nettoyer les marqueurs existants
+    if (restaurantsLayer) {
+        restaurantsLayer.clearLayers();
+    } else {
+        restaurantsLayer = L.layerGroup().addTo(map);
+    }
+
+    restaurantsData = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    restaurants.forEach((restaurant, index) => {
+        try {
+            const restaurantData = {
+                ...restaurant,
+                lat: restaurant.lat,
+                lng: restaurant.lon,
+                address: `${restaurant.numero_rue}, ${restaurant.rue} - ${restaurant.ville}`
+            };
+
+            restaurantsData.push(restaurantData);
+
+            // Animation progressive des marqueurs
+            setTimeout(() => {
+                createRestaurantMarker(restaurantData);
+            }, index * 100);
+
+            successCount++;
+
+        } catch (error) {
+            console.error(`Erreur pour le restaurant ${restaurant.nom}:`, error);
+            errorCount++;
+        }
+    });
+}
+
+
+// Chargement des données des restaurants
+async function loadRestaurantsData() {
+    try {
+
+        const response = await fetch('./restaurants.json');
+
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.status === 200 && result.data) {
+            processRestaurantsData(result.data);
+        } else {
+            throw new Error('Format de données invalide');
+        }
+    } catch (error) {
+        console.error("Erreur lors du chargement des restaurants:", error);
+    }
+}
+
+// Afficher le formulaire de réservation
+function afficherReservationForm(nomRestaurant, lat, lon) {
+    const formHtml = `
+        <div class="reservation-form">
+            <h5>Réserver une table au ${nomRestaurant}</h5>
+            <form id="reservationForm">
+                <div class="mb-3">
+                    <label for="nom" class="form-label">Nom</label>
+                    <input type="text" class="form-control" id="nom" required>
+                </div>
+                <div class="mb-3">
+                    <label for="prenom" class="form-label">Prénom</label>
+                    <input type="text" class="form-control" id="prenom" required>
+                </div>
+                <div class="mb-3">
+                    <label for="telephone" class="form-label">Téléphone</label>
+                    <input type="tel" class="form-control" id="telephone" required>
+                </div>
+                <div class="mb-3">
+                    <label for="nbPers" class="form-label">Nombre de personnes</label>
+                    <input type="number" min="1" class="form-control" id="nbPers" required>
+                </div>
+                <div class="mb-3">
+                    <label for="date" class="form-label">Date et heure</label>
+                    <input type="datetime-local" class="form-control" id="date" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Réserver</button>
+            </form>
+        </div>
+    `;
+
+    const popup = L.popup()
+        .setLatLng([lat, lon])
+        .setContent(formHtml)
+        .openOn(map);
+
+    document.getElementById('reservationForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const nom = document.getElementById('nom').value;
+        const prenom = document.getElementById('prenom').value;
+        const telephone = document.getElementById('telephone').value;
+        const date = document.getElementById('date').value;
+
+        reserverRestaurant(nomRestaurant, nom, prenom, telephone, date);
+        popup.remove();
+    });
+}
+
+async function reserverRestaurant(restaurant, nom, prenom, telephone, date) {
+    // Requête POST avec données JSON
+    const response = await fetch('./reservations.json', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            restaurant: restaurant,
+            nom: nom,
+            prenom: prenom,
+            telephone: telephone,
+            date: date
+        })
+    });
+
+    const result = await response.json();
+}
+
+// Centrer la carte sur un restaurant
+function centerOnRestaurant(lat, lng) {
+    map.setView([lat, lng], 16, {
+        animate: true,
+        duration: 1
+    });
+}
+
+// Calculer l'itinéraire vers un restaurant
+function routeToRestaurant(restaurantName, lat, lng) {
+    map.locate({setView: false});
+
+    map.once('locationfound', function (e) {
+        if (routingControl) {
+            map.removeControl(routingControl);
+        }
+
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(e.latlng.lat, e.latlng.lng),
+                L.latLng(lat, lng)
+            ],
+            routeWhileDragging: true,
+            geocoder: L.Control.Geocoder.nominatim(),
+            createMarker: function () { return null; }
+        }).addTo(map);
+
+        showToast(`Itinéraire vers ${restaurantName} calculé !`, 'success', '🧭');
+    });
+
+    map.once('locationerror', function (e) {
+        showToast('Géolocalisation impossible : ' + e.message, 'error', '❌');
+    });
+}
+
+// Afficher tous les restaurants
+function showAllRestaurants() {
+    if (restaurantsData.length > 0) {
+        const group = new L.featureGroup(Object.values(restaurantsLayer._layers));
+        map.fitBounds(group.getBounds().pad(0.1));
+        showToast(`${restaurantsData.length} restaurants affichés`, 'info', '🍽️');
+    } else {
+        showToast('Aucun restaurant à afficher', 'warning', '⚠️');
+    }
+}
+
+// Basculer l'affichage des restaurants
+function toggleRestaurants() {
+    if (map.hasLayer(restaurantsLayer)) {
+        map.removeLayer(restaurantsLayer);
+        showToast('Restaurants masqués', 'info', '👁️‍🗨️');
+    } else {
+        map.addLayer(restaurantsLayer);
+        showToast('Restaurants affichés', 'info', '👁️');
+    }
+}
+
 
 // Chargement des données des stations
 async function loadStationsData() {
@@ -217,6 +539,73 @@ function createStationMarker(station) {
 
     marker.bindPopup(popupContent);
     markersLayer.addLayer(marker);
+}
+
+
+// Fonction pour trouver la station la plus proche
+function findNearestStation(latlng) {
+    if (stationsData.length === 0) {
+        return null;
+    }
+
+    let nearestStation = null;
+    let minDistance = Infinity;
+
+    stationsData.forEach(station => {
+        const stationLatLng = L.latLng(station.lat, station.lon);
+        const distance = latlng.distanceTo(stationLatLng);
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestStation = station;
+        }
+    });
+
+    return nearestStation;
+}
+
+// Fonction pour tracer un itinéraire vers la station la plus proche
+function routeToNearestStation() {
+    map.locate({setView: false, maxZoom: 16});
+
+    map.on('locationfound', function (e) {
+        if (routingControl) {
+            map.removeControl(routingControl);
+        }
+
+        // Trouver la station la plus proche
+        const nearestStation = findNearestStation(e.latlng);
+        if (!nearestStation) {
+            alert('Aucune station trouvée à proximité.');
+            return;
+        }
+
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(e.latlng.lat, e.latlng.lng),
+                L.latLng(nearestStation.lat, nearestStation.lon)
+            ],
+            routeWhileDragging: true,
+            geocoder: L.Control.Geocoder.nominatim(),
+            createMarker: function () { return null; } // Ne pas créer de marqueur par défaut
+        }).addTo(map);
+
+        console.log('Itinéraire vers la station la plus proche tracé avec succès.');
+
+        // Afficher le popup de la station la plus proche
+        const popupContent = `
+            <strong><i class="fas fa-bicycle me-1"></i>Station la plus proche :</strong><br>
+            ${nearestStation.name} (${nearestStation.bikes_available} vélos disponibles)
+        `;
+        L.popup()
+            .setLatLng([nearestStation.lat, nearestStation.lon])
+            .setContent(popupContent)
+            .openOn(map);
+    });
+
+    map.on('locationerror', function (e) {
+        alert('Géolocalisation impossible : ' + e.message);
+    });
 }
 
 // Mise à jour des statistiques

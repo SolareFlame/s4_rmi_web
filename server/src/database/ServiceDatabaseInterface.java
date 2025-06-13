@@ -12,5 +12,11 @@ public interface ServiceDatabaseInterface extends Remote {
 
     public String demandeReservationTable(String JSONdata) throws RemoteException, ServeurNonIdentifieException;
 
+    public String consulterTablesDisponibles(String JSONdata) throws RemoteException, ServeurNonIdentifieException;
+
+    //public String consulterPlatsRestaurant(String JSONdata) throws RemoteException, ServeurNonIdentifieException;
+
+    //public String demandeCommandePlat(String JSONdata) throws RemoteException, ServeurNonIdentifieException;
+
 }
 

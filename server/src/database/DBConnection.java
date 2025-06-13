@@ -1,5 +1,7 @@
 package database;
 
+import config.ConfigLoader;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -8,13 +10,14 @@ import java.sql.Connection;
 
 public class DBConnection {
 
-    // variables de connection
-    private static String userName = "root";
-    private static String password = "";
-    private static String serverName = "127.0.0.1";
-    private static String portNumber = "3306";
+    // variables de connectiond
+    private static final ConfigLoader config = new ConfigLoader();
+    private static final String userName = config.get("usernameDB");
+    private static final String password = config.get("passwordDB");
+    private static final String serverName = config.get("serverDB");
+    private static final String portNumber = config.get("portDB");
 
-    private static String dbName = "miaam";
+    private static String dbName = config.get("nameDB");
     private static DBConnection dbConnection = null;
     private Connection connect = null;
 

@@ -31,6 +31,7 @@ class MainDB {
 
         if (isConnecte) {
             // on lance notre service dans notre annuaire
+            System.out.println(s.consulterAffectation());
             s.lancerService();
 
             // on inscrit notre service au service central

@@ -86,7 +86,7 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         }
     }
 
-    public String demandeReservationTable(String JSONdata) throws RemoteException, ServeurNonIdentifieException {
+    public String demandeReservationTableOld(String JSONdata) throws RemoteException, ServeurNonIdentifieException {
         System.out.println("Appel de reserverTable avec les données : " + JSONdata);
         Gson gson = new Gson();
 
@@ -105,6 +105,80 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
         // on verifie que le serveur est connecté
         if (numserv == -1) throw new ServeurNonIdentifieException();
 
+        // on verifie que la table existe
+        if (!Table.exist(numtab)) {
+            System.out.println("La table n'existe pas");
+            //return toJsonReservation("ERROR", "La table n'existe pas");
+            return toErrorJson("La table n'existe pas", 404);
+        }
+        System.out.println("  - Table existe");
+
+        // on verifie que la table est disponible
+        if (!Table.isDispoByDate(date, heure, numtab)) {
+            System.out.println("La table n'est pas disponible pour cette date et heure");
+            //return toJsonReservation("ERROR", "La table n'est pas disponible pour cette date et heure");
+            return toErrorJson("La table n'est pas disponible pour cette date et heure", 409);
+        }
+        System.out.println("  - Table est disponible");
+
+        // on verifie que la table puisse accueillir le nombre de personnes
+        if (!Table.isBigEnough(numtab, nbpers)) {
+            System.out.println("La table n'est pas assez grande");
+            //return toJsonReservation("ERROR", "La table n'est pas assez grande");
+            return toErrorJson("La table n'est pas assez grande", 400);
+        }
+        System.out.println("  - Table assez grande");
+
+        if (reserverTable(numtab, date, heure, nbpers, nom, prenom, telephone)) {
+            System.out.println("Table réservée avec succès");
+            //return toJsonReservation("OK", "Table réservée avec succès");
+            return toJson(Map.of(
+                    "details", "Table réservée avec succès",
+                    "numtab", numtab,
+                    "date", date,
+                    "heure", heure,
+                    "nbpers", nbpers,
+                    "nom", nom,
+                    "prenom", prenom,
+                    "telephone", telephone
+            ), 201);
+        } else {
+            System.err.println("Erreur lors de la réservation de la table");
+            //return toJsonReservation("ERROR", "Erreur lors de la réservation de la table");
+            return toErrorJson("Erreur lors de la réservation de la table", 500);
+        }
+    }
+
+    public String demandeReservationTable(String JSONdata) throws RemoteException, ServeurNonIdentifieException {
+        System.out.println("Appel de reserverTable avec les données : " + JSONdata);
+        Gson gson = new Gson();
+
+        JsonObject param = gson.fromJson(JSONdata, JsonObject.class); //ApiParser.parseQuery(JSONdata);
+        System.out.println("map : " + param);
+
+        int numRestau = param.get("numrestau").getAsInt();
+        String date = param.get("date").getAsString();
+        String heure = param.get("heure").getAsString();
+        int nbpers = param.get("nbpers").getAsInt();
+        String nom = param.get("nom").getAsString();
+        String prenom = param.get("prenom").getAsString();
+        String telephone = param.get("telephone").getAsString();
+        System.out.println("numRestau : " + numRestau + ", date : " + date + ", heure : " + heure + " nbpers : " + nbpers + ", nom : " + nom + ", prenom : " + prenom + ", telephone : " + telephone);
+
+        // on verifie que le serveur est connecté
+        if (numserv == -1) throw new ServeurNonIdentifieException();
+
+        Table tableChosie = Table.choisirMeilleureTable(date + " " + heure, numRestau, nbpers);
+
+        if (tableChosie == null) {
+            System.out.println("Aucune table disponible pour cette date et heure");
+
+            // on renvoie une liste d'autres crénaux disponibles
+            ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(date, numRestau);
+            return toJson(creneauxDispo, 404);
+        }
+
+        int numtab = tableChosie.getNumtab();
         // on verifie que la table existe
         if (!Table.exist(numtab)) {
             System.out.println("La table n'existe pas");
@@ -463,6 +537,44 @@ public class Serveur implements ServiceDatabaseInterface, Remote, Serializable {
     public String consulterToutesDonneesRestoNancy() throws RemoteException {
         System.out.println("Demande de consultation des données du restaurant Nancy");
         return toJson(Restaurant.getCoordonnees(), 200);
+    }
+
+//    @Override
+//    public String consulterPlatsRestaurant(String JSONdata) throws RemoteException, ServeurNonIdentifieException {
+//        System.out.println("Demande de consultation des plats du restaurant avec les données : " + JSONdata);
+//        Gson gson = new Gson();
+//        JsonObject param = gson.fromJson(JSONdata, JsonObject.class);
+//        int numResto = param.get("numResto").getAsInt();
+//
+//        if (numserv == -1) throw new ServeurNonIdentifieException();
+//
+//        ArrayList<Plat> plats = Plat.getPlatsByRestaurant(numResto);
+//        if (plats.isEmpty()) {
+//            return toErrorJson("Aucun plat disponible pour ce restaurant", 404);
+//        }
+//
+//        return toJson(plats, 200);
+//    }
+
+    /**
+     * Consulter les tables disponibles pour un restaurant et une date donné.
+     * @param JSONdata les données JSON contenant l'id du restaurant et la date voulue
+     * @return une liste de tables disponibles pour le restaurant à la date demandée
+     */
+    @Override
+    public String consulterTablesDisponibles(String JSONdata) throws RemoteException, ServeurNonIdentifieException {
+        System.out.println("Demande de consultation des tables disponibles avec les données : " + JSONdata);
+        Gson gson = new Gson();
+        JsonObject param = gson.fromJson(JSONdata, JsonObject.class);
+
+        int idRestau = param.get("idRestau").getAsInt();
+        String date = param.get("date").getAsString();
+
+        if (numserv == -1) throw new ServeurNonIdentifieException();
+
+        ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(date, idRestau);
+
+        return toJson(creneauxDispo, 200);
     }
 }
 

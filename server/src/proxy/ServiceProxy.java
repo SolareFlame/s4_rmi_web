@@ -1,6 +1,7 @@
 package proxy;
 
 import com.google.gson.Gson;
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
@@ -66,14 +67,18 @@ public class ServiceProxy implements ServiceProxyInterface {
         server.createContext("/data", router_d);
 
         // PING
-        server.createContext("/ping", exchange -> {
+        server.createContext("/ping", (HttpExchange exchange) -> {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
             String response = "Pong";
-
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-            exchange.sendResponseHeaders(200, response.length());
+            exchange.sendResponseHeaders(200, response.getBytes().length);
             exchange.getResponseBody().write(response.getBytes());
             exchange.close();
         });

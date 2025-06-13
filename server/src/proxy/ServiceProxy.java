@@ -68,6 +68,11 @@ public class ServiceProxy implements ServiceProxyInterface {
         // PING
         server.createContext("/ping", exchange -> {
             String response = "Pong";
+
+            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
             exchange.sendResponseHeaders(200, response.length());
             exchange.getResponseBody().write(response.getBytes());
             exchange.close();

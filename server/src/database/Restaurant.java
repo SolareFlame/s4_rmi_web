@@ -47,7 +47,7 @@ public class Restaurant {
      */
     public static List<Map<String, String>> getCoordonnees() {
         Connection co = DBConnection.getConnection();
-        String request = "SELECT nom, rue, numero_rue, ville, coordonee FROM restaurant;";
+        String request = "SELECT nom, rue, numero_rue, ville, latitude, longitude FROM restaurant;";
 
         List<Map<String, String>> restaurants = new LinkedList<>();
 
@@ -64,7 +64,8 @@ public class Restaurant {
                 coordonnees.put("rue", rs.getString("rue"));
                 coordonnees.put("numero_rue", rs.getString("numero_rue"));
                 coordonnees.put("ville", rs.getString("ville"));
-                coordonnees.put("coordonee", rs.getString("coordonee"));
+                coordonnees.put("latitude", rs.getString("latitude"));
+                coordonnees.put("longitude", rs.getString("longitude"));
 
                 restaurants.add(coordonnees);
             }

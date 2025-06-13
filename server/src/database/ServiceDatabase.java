@@ -172,7 +172,8 @@ public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serial
             System.out.println("Aucune table disponible pour cette date et heure");
 
             // on renvoie une liste d'autres crénaux disponibles
-            ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(date, numRestau);
+            ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(date + " " + heure, numRestau);
+            System.out.println("Créneaux proposé au client : " + creneauxDispo);
             return toJson(creneauxDispo, 404);
         }
 
@@ -570,10 +571,12 @@ public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serial
 
         int idRestau = param.get("idRestau").getAsInt();
         String date = param.get("date").getAsString();
+        String heure = param.get("heure").getAsString();
+        String dateHeure = date + " " + heure;
 
         if (numserv == -1) throw new ServeurNonIdentifieException();
 
-        ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(date, idRestau);
+        ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(dateHeure, idRestau);
 
         return toJson(creneauxDispo, 200);
     }

@@ -168,6 +168,7 @@ public class Table {
      * @return Map<String, ArrayList<Table>> avec les créneaux disponibles et leurs tables
      */
     public static Map<String, ArrayList<Table>> getCreneauxDisponibles(String dateHeure, int idRestaurant) {
+        System.out.println("Calcul des créneaux disponible pour la date " + dateHeure + " et l'idRestaurant : " + idRestaurant);
         Connection co = DBConnection.getConnection();
         Map<String, ArrayList<Table>> creneauxDisponibles = new HashMap<>();
 
@@ -202,7 +203,7 @@ public class Table {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-
+        System.out.println("Créneaux trouvé(s) : " + creneauxDisponibles);
         return creneauxDisponibles;
     }
 
@@ -211,6 +212,7 @@ public class Table {
      * Prend en compte les réservations qui pourraient chevaucher (±1h30)
      */
     private static ArrayList<Table> getTablesDispoForCreneau(String creneauHeure, int idRestaurant, Connection co) {
+        System.out.println("Demande db crénaux dispo : " + creneauHeure);
         ArrayList<Table> tablesDisponibles = new ArrayList<>();
 
         try {
@@ -260,6 +262,7 @@ public class Table {
             e.printStackTrace();
         }
 
+        System.out.println("tablesDisponibles : " + tablesDisponibles);
         return tablesDisponibles;
     }
 
@@ -267,65 +270,6 @@ public class Table {
         Map<String, ArrayList<Table>> creneaux = getCreneauxDisponibles(dateHeure, idRestaurant);
         return new ArrayList<>(creneaux.keySet());
     }
-
-    /**
-     * Vérifie si la date/heure proposée est disponible pour le restaurant
-     *
-     * @param dateHeure date et heure au format "YYYY-MM-DD HH:MM:SS"
-     * @param idRestaurant identifiant du restaurant
-     * @return true si au moins une table est disponible à cette date/heure, false sinon
-     */
-    public static boolean isDateHeureDisponible(String dateHeure, int idRestaurant) {
-        Connection co = DBConnection.getConnection();
-
-        try {
-
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Date heureDemandee = sdf.parse(dateHeure);
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(heureDemandee);
-
-            // 1h30 avant et apres
-            Calendar calAvant = (Calendar) cal.clone();
-            calAvant.add(Calendar.MINUTE, -90);
-            String heureAvant = sdf.format(calAvant.getTime());
-
-            Calendar calApres = (Calendar) cal.clone();
-            calApres.add(Calendar.MINUTE, 90);
-            String heureApres = sdf.format(calApres.getTime());
-
-            // Vérifier s'il existe au moins une table libre dans cette fenêtre
-            String request = """
-            SELECT COUNT(*) as nb_tables_libres 
-            FROM `table` t 
-            WHERE t.id_restau = ? 
-            AND t.numtab NOT IN (
-                SELECT r.numtab 
-                FROM reservation r 
-                WHERE r.datres BETWEEN ? AND ?
-            )
-        """;
-
-            assert co != null;
-            PreparedStatement prep = co.prepareStatement(request);
-            prep.setInt(1, idRestaurant);
-            prep.setString(2, heureAvant);
-            prep.setString(3, heureApres);
-
-            ResultSet rs = prep.executeQuery();
-
-            if (rs.next()) {
-                int nbTablesLibres = rs.getInt("nb_tables_libres");
-                return nbTablesLibres > 0;
-            }
-
-        } catch (SQLException | ParseException e) {
-            e.printStackTrace();
-        }
-
-        return false;
-    }
-
 
     /**
      * Choisit la meilleure table disponible (la plus petite qui convient au nombre de personnes)

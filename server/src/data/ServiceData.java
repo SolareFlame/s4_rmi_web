@@ -26,8 +26,16 @@ public class ServiceData implements ServiceDataInterface {
         URL url = new URL(apiUrl);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
 
         System.out.println("Data requested");
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            System.err.println("Failed to fetch data from API. Response code: " + responseCode);
+            throw new RemoteException("Failed to fetch data from API. Response code: " + responseCode);
+        }
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             StringBuilder jsonBuilder = new StringBuilder();

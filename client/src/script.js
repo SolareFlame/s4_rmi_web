@@ -22,7 +22,7 @@ async function initMap() {
         map = L.map('map').setView([lat, lon], CONFIG.getInt('DEFAULT_ZOOM'));
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
-        map = L.map('map').setView([CONFIG.get('FALLBACK_LAT'), CONFIG.get('FALLBACK_LNG')], CONFIG.getInt('DEFAULT_ZOOM'));
+        map = L.map('map').setView([CONFIG.get('DEFAULT_LAT'), CONFIG.get('DEFAULT_LON')], CONFIG.getInt('DEFAULT_ZOOM'));
     }
 
     L.tileLayer(CONFIG.get('TILE_URL'), {
@@ -95,7 +95,7 @@ function showAllStations() {
 
 // Création d'un marqueur pour un restaurant
 function createRestaurantMarker(restaurant) {
-    const marker = L.marker([restaurant.lat, restaurant.lng], {
+    const marker = L.marker([restaurant.lat, restaurant.lon], {
         icon: L.divIcon({
             className: 'custom-restaurant-marker',
             html: `
@@ -170,7 +170,7 @@ function createRestaurantPopupContent(restaurant) {
                     gap: 10px;
                     margin-top: 15px;
                 ">
-                    <button onclick="routeToRestaurant('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lng})" 
+                    <button onclick="routeToRestaurant('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lon})" 
                             style="
                                 background: var(--gradient-primary);
                                 color: white;
@@ -185,7 +185,7 @@ function createRestaurantPopupContent(restaurant) {
                         🧭 Itinéraire
                     </button>
                     
-                    <button onclick="centerOnRestaurant(${restaurant.lat}, ${restaurant.lng})" 
+                    <button onclick="centerOnRestaurant(${restaurant.lat}, ${restaurant.lon})" 
                             style="
                                 background: var(--gradient-secondary);
                                 color: white;
@@ -200,7 +200,7 @@ function createRestaurantPopupContent(restaurant) {
                         🎯 Centrer
                     </button>
                     
-                    <button onclick="afficherReservationForm('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lng})"
+                    <button onclick="afficherReservationForm('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lon})"
                             style="
                                 background: var(--gradient-accent);
                                 color: white;
@@ -235,7 +235,7 @@ function processRestaurantsData(restaurants) {
             const restaurantData = {
                 ...restaurant,
                 lat: restaurant.lat,
-                lng: restaurant.lon,
+                lon: restaurant.lon,
                 address: `${restaurant.numero_rue}, ${restaurant.rue} - ${restaurant.ville}`
             };
 
@@ -345,15 +345,15 @@ async function reserverRestaurant(restaurant, nom, prenom, telephone, date) {
 }
 
 // Centrer la carte sur un restaurant
-function centerOnRestaurant(lat, lng) {
-    map.setView([lat, lng], CONFIG.getInt('RESTAURANT_ZOOM'), {
+function centerOnRestaurant(lat, lon) {
+    map.setView([lat, lon], CONFIG.getInt('RESTAURANT_ZOOM'), {
         animate: true,
         duration: 1
     });
 }
 
 // Calculer l'itinéraire vers un restaurant
-function routeToRestaurant(restaurantName, lat, lng) {
+function routeToRestaurant(restaurantName, lat, lon) {
     map.locate({setView: false});
 
     map.once('locationfound', function (e) {
@@ -364,7 +364,7 @@ function routeToRestaurant(restaurantName, lat, lng) {
         routingControl = L.Routing.control({
             waypoints: [
                 L.latLng(e.latlng.lat, e.latlng.lng),
-                L.latLng(lat, lng)
+                L.latLng(lat, lon)
             ],
             routeWhileDragging: true,
             geocoder: L.Control.Geocoder.nominatim(),
@@ -649,7 +649,7 @@ function processIncidentsData(incidents) {
         try {
             const incidentData = {
                 ...incident,
-                location: incident.location || { polyline: [CONFIG.get('FALLBACK_LAT'), CONFIG.get('FALLBACK_LNG')] }
+                location: incident.location || { polyline: [CONFIG.get('DEFAULT_LAT'), CONFIG.get('DEFAULT_LON')] }
             };
 
             incidentsData.push(incidentData);
@@ -666,7 +666,7 @@ function processIncidentsData(incidents) {
 
 
 // Fonction pour trouver la station la plus proche
-function findNearestStation(latlng) {
+function findNearestStation(latlon) {
     if (stationsData.length === 0) {
         return null;
     }
@@ -675,8 +675,8 @@ function findNearestStation(latlng) {
     let minDistance = Infinity;
 
     stationsData.forEach(station => {
-        const stationLatLng = L.latLng(station.lat, station.lon);
-        const distance = latlng.distanceTo(stationLatLng);
+        const stationLatLon = L.latLng(station.lat, station.lon);
+        const distance = latlon.distanceTo(stationLatLon);
 
         if (distance < minDistance) {
             minDistance = distance;

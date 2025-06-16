@@ -15,12 +15,10 @@ const CONFIG = {
     LOCATION_MAX_ZOOM: 16,
     RESTAURANT_ZOOM: 16,
 
-    // Fallback Coordinates
-    FALLBACK_LAT: 48.6937223,
-    FALLBACK_LNG: 6.1834097,
+    DEFAULT_LAT: 48.6937223,
+    DEFAULT_LON: 6.1834097,
 
     // Tile Configuration
-
     TILE_URL: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     TILE_ATTRIBUTION: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 

@@ -23,7 +23,7 @@ const CONFIG = {
     TILE_ATTRIBUTION: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 
     // Data Files
-    RESTAURANTS_DATA_FILE: 'https://localhost:8080/database/restaurants/',
+    RESTAURANTS_API: 'https://localhost:8080/database/restaurants/',
     RESERVATIONS_ENDPOINT: './reservations.json',
 
     // Timing Configuration

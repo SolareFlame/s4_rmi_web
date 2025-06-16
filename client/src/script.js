@@ -249,12 +249,13 @@ function processRestaurantsData(restaurants) {
             console.error(`Erreur pour le restaurant ${restaurant.nom}:`, error);
         }
     });
+    console.log('Restaurants chargés:', restaurantsData);
 }
 
 // Chargement des données des restaurants
 async function loadRestaurantsData() {
     try {
-        const response = await fetch(CONFIG.get('RESTAURANTS_DATA_FILE'));
+        const response = await fetch(CONFIG.get('RESTAURANTS_API'));
 
         if (!response.ok) {
             throw new Error(`Erreur HTTP: ${response.status}`);
@@ -329,7 +330,7 @@ async function reserverRestaurant(restaurant, nom, prenom, telephone, date) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                restaurant: restaurant,
+                restaurant: restaurant.id_restau,
                 nom: nom,
                 prenom: prenom,
                 telephone: telephone,

@@ -174,9 +174,10 @@ public class Table {
         try {
             // Parser la date/heure demandée
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Date heureDemandeе = sdf.parse(dateHeure);
+            Date heureDemandee = sdf.parse(dateHeure);
+            System.out.println("Date demandée : " + heureDemandee);
             Calendar cal = Calendar.getInstance();
-            cal.setTime(heureDemandeе);
+            cal.setTime(heureDemandee);
 
             // Générer les créneaux de 15 minutes entre -1h et +1h
             Calendar calDebut = (Calendar) cal.clone();
@@ -339,6 +340,7 @@ public class Table {
         Connection co = DBConnection.getConnection();
 
         try {
+            dateHeure = dateHeure.replace("T", " ") + ":00"; // Assurer le format correct
             // Calculer la fenêtre de conflit (±1h30 pour tenir compte de la durée des réservations)
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Date heureDemandee = sdf.parse(dateHeure);

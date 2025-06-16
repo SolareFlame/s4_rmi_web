@@ -48,7 +48,14 @@ public class DatabaseRouter implements HttpHandler {
 
                     case "POST":
                         System.out.println("POST request to /database/restaurants");
+//                        System.out.println("Request body: " + new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+
                         String jsonBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                        System.out.println("Parsed JSON body: " + jsonBody);
+                        if (jsonBody.isEmpty()) {
+                            sendJson(exchange, toErrorJson("Empty request body", 400));
+                            return;
+                        }
                         String postResponse = s_p.getServiceDatabase().demandeReservationTable(jsonBody);
                         sendJson(exchange, postResponse);
                         break;

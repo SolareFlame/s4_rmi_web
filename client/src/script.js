@@ -172,7 +172,7 @@ function createRestaurantPopupContent(restaurant) {
                 ">
                     <button onclick="routeToRestaurant('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lon})" 
                             style="
-                                background: var(--gradient-primary);
+                                background: var(--primary-color);
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -187,7 +187,7 @@ function createRestaurantPopupContent(restaurant) {
                     
                     <button onclick="centerOnRestaurant(${restaurant.lat}, ${restaurant.lon})" 
                             style="
-                                background: var(--gradient-secondary);
+                                background: var(--primary-color);
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -200,9 +200,9 @@ function createRestaurantPopupContent(restaurant) {
                         🎯 Centrer
                     </button>
                     
-                    <button onclick="afficherReservationForm('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lon})"
+                    <button onclick="afficherReservationForm(${JSON.stringify(restaurant).replace(/"/g, '&quot;')})"
                             style="
-                                background: var(--gradient-accent);
+                                background: var(--primary-color);
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -233,10 +233,12 @@ function processRestaurantsData(restaurants) {
     restaurants.forEach((restaurant, index) => {
         try {
             const restaurantData = {
-                ...restaurant,
-                lat: restaurant.lat,
-                lon: restaurant.lon,
-                address: `${restaurant.numero_rue}, ${restaurant.rue} - ${restaurant.ville}`
+                id_restau: restaurant.id_restau,
+                nom: restaurant.nom,
+                address: restaurant.numero_rue + ' ' + restaurant.rue + ', ' + restaurant.ville,
+                coordonee: restaurant.lat && restaurant.lon ? `${restaurant.lat}, ${restaurant.lon}` : 'Coordonnées non disponibles',
+                lat: parseFloat(restaurant.lat) || CONFIG.getNumber('DEFAULT_LAT'),
+                lon: parseFloat(restaurant.lon) || CONFIG.getNumber('DEFAULT_LON')
             };
 
             restaurantsData.push(restaurantData);
@@ -274,10 +276,15 @@ async function loadRestaurantsData() {
 }
 
 // Afficher le formulaire de réservation
-function afficherReservationForm(nomRestaurant, lat, lon) {
+function afficherReservationForm(restaurant) {
+    // Parser l'objet restaurant si c'est une chaîne
+    if (typeof restaurant === 'string') {
+        restaurant = JSON.parse(restaurant.replace(/&quot;/g, '"'));
+    }
+
     const formHtml = `
         <div class="reservation-form">
-            <h5>Réserver une table au ${nomRestaurant}</h5>
+            <h5>Réserver une table au ${restaurant.nom}</h5>
             <form id="reservationForm">
                 <div class="mb-3">
                     <label for="nom" class="form-label">Nom</label>
@@ -305,7 +312,7 @@ function afficherReservationForm(nomRestaurant, lat, lon) {
     `;
 
     const popup = L.popup()
-        .setLatLng([lat, lon])
+        .setLatLng([restaurant.lat, restaurant.lon])
         .setContent(formHtml)
         .openOn(map);
 
@@ -314,26 +321,29 @@ function afficherReservationForm(nomRestaurant, lat, lon) {
         const nom = document.getElementById('nom').value;
         const prenom = document.getElementById('prenom').value;
         const telephone = document.getElementById('telephone').value;
+        const nbPers = document.getElementById('nbPers').value;
         const date = document.getElementById('date').value;
 
-        reserverRestaurant(nomRestaurant, nom, prenom, telephone, date);
+        reserverRestaurant(restaurant.id_restau, nom, prenom, telephone, nbPers, date);
         popup.remove();
     });
 }
 
 // Réservation restaurant
-async function reserverRestaurant(restaurant, nom, prenom, telephone, date) {
+async function reserverRestaurant(id, nom, prenom, telephone, nbPers, date) {
+    console.log(`Réservation pour le restaurant ID: ${id}, Nom: ${nom}, Prénom: ${prenom}, Téléphone: ${telephone}, NbPers: ${nbPers} Date: ${date}`);
     try {
-        const response = await fetch(CONFIG.get('RESERVATIONS_ENDPOINT'), {
+        const response = await fetch(CONFIG.get('RESTAURANTS_API'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                restaurant: restaurant.id_restau,
+                id_restau: id,
                 nom: nom,
                 prenom: prenom,
                 telephone: telephone,
+                nb_pers: nbPers,
                 date: date
             })
         });
@@ -560,6 +570,7 @@ function createStationPopupContent(station, cbText, isOperational) {
     `;
 }
 
+// Chargement des données des incidents
 async function loadIncidentsData() {
     try {
         const response = await fetch(CONFIG.get('INCIDENTS_API_URL'));
@@ -571,10 +582,8 @@ async function loadIncidentsData() {
 
         // Vérifier le format des données reçues
         if (Array.isArray(data.data)) {
-            // Si data est directement un tableau
             processIncidentsData(data.data);
         } else if (data.data.incidents && Array.isArray(data.data.incidents)) {
-            // Si data contient une propriété 'incidents' qui est un tableau
             processIncidentsData(data.data.incidents);
         } else {
             console.error('Format inattendu des données incidents:', data.data);
@@ -585,9 +594,28 @@ async function loadIncidentsData() {
     }
 }
 
+// Création d'un marqueur pour un incident
 function createIncidentMarker(incident) {
-    const lat = incident.location.polyline.split(' ')[0];
-    const lon = incident.location.polyline.split(' ')[1];
+    // Gestion robuste des coordonnées
+    let lat, lon;
+
+    if (incident.location && incident.location.polyline) {
+        if (typeof incident.location.polyline === 'string') {
+            const coords = incident.location.polyline.split(' ');
+            lat = parseFloat(coords[0]);
+            lon = parseFloat(coords[1]);
+        } else if (Array.isArray(incident.location.polyline)) {
+            lat = parseFloat(incident.location.polyline[0]);
+            lon = parseFloat(incident.location.polyline[1]);
+        }
+    }
+
+    // Validation des coordonnées
+    if (isNaN(lat) || isNaN(lon)) {
+        console.warn('Coordonnées invalides pour l\'incident:', incident);
+        return;
+    }
+
     const marker = L.marker([lat, lon], {
         icon: L.divIcon({
             className: 'custom-incident-marker',
@@ -617,6 +645,7 @@ function createIncidentMarker(incident) {
     incidentsLayer.addLayer(marker);
 }
 
+// Création du contenu du popup incident
 function createIncidentPopupContent(incident) {
     return `
         <div style="min-width: 250px;">
@@ -631,12 +660,13 @@ function createIncidentPopupContent(incident) {
                 <strong>Description :</strong> ${incident.description || 'Aucune description fournie'}
             </p>
             <p style="margin-bottom: 10px; color: #6c757d;">
-                <strong>Date :</strong> ${new Date(incident.date).toLocaleString() || 'Inconnue'}
+                <strong>Date :</strong> ${incident.date ? new Date(incident.date).toLocaleString() : 'Inconnue'}
             </p>
         </div>
     `;
 }
 
+// Traitement des données des incidents
 function processIncidentsData(incidents) {
     if (incidentsLayer) {
         incidentsLayer.clearLayers();
@@ -665,9 +695,8 @@ function processIncidentsData(incidents) {
     });
 }
 
-
 // Fonction pour trouver la station la plus proche
-function findNearestStation(latlon) {
+function findNearestStation(latlng) {
     if (stationsData.length === 0) {
         return null;
     }
@@ -676,8 +705,8 @@ function findNearestStation(latlon) {
     let minDistance = Infinity;
 
     stationsData.forEach(station => {
-        const stationLatLon = L.latLng(station.lat, station.lon);
-        const distance = latlon.distanceTo(stationLatLon);
+        const stationLatLng = L.latLng(station.lat, station.lon);
+        const distance = latlng.distanceTo(stationLatLng);
 
         if (distance < minDistance) {
             minDistance = distance;

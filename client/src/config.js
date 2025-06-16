@@ -5,7 +5,8 @@ const CONFIG = {
     CYCLOCITY_BASE_URL: 'https://api.cyclocity.fr/contracts/nancy/gbfs/',
     CYCLOCITY_GBFS_ENDPOINT: 'gbfs.json',
     CYCLOCITY_STATUS_ENDPOINT: 'v2/station_status.json',
-    INCIDENTS_API_URL: 'https://www.datagrandest.fr/data4citizen/sites/default/files/dataset/2025/03/04/9a7472ee-a0f9-47f9-b888-769085cb52dd/cifs_waze_v2.json',
+    // INCIDENTS_API_URL: 'https://www.datagrandest.fr/data4citizen/sites/default/files/dataset/2025/03/04/9a7472ee-a0f9-47f9-b888-769085cb52dd/cifs_waze_v2.json',
+    INCIDENTS_API_URL: 'https://localhost:8080/data',
 
     // Map Configuration
     DEFAULT_CITY: 'Nancy',

@@ -566,17 +566,18 @@ async function loadIncidentsData() {
             throw new Error(`Erreur HTTP: ${response.status}`);
         }
         const data = await response.json();
+        console.log('Données incidents reçues:', data);
 
         // Vérifier le format des données reçues
-        if (Array.isArray(data)) {
+        if (Array.isArray(data.data)) {
             // Si data est directement un tableau
-            processIncidentsData(data);
-        } else if (data.incidents && Array.isArray(data.incidents)) {
+            processIncidentsData(data.data);
+        } else if (data.data.incidents && Array.isArray(data.data.incidents)) {
             // Si data contient une propriété 'incidents' qui est un tableau
-            processIncidentsData(data.incidents);
+            processIncidentsData(data.data.incidents);
         } else {
-            console.error('Format inattendu des données incidents:', data);
-            console.log('Structure reçue:', Object.keys(data));
+            console.error('Format inattendu des données incidents:', data.data);
+            console.log('Structure reçue:', Object.keys(data.data));
         }
     } catch (error) {
         console.error("Erreur lors du chargement des incidents:", error);

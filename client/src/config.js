@@ -24,7 +24,6 @@ const CONFIG = {
 
     // Data Files
     RESTAURANTS_API: 'https://localhost:8080/database/restaurants/',
-    RESERVATIONS_ENDPOINT: './reservations.json',
 
     // Timing Configuration
     MARKER_ANIMATION_DELAY: 100,

@@ -33,8 +33,8 @@
         <h2>Technologies utilisées</h2>
         <ul>
             <li><strong>Frontend :</strong> JavaScript, HTML5, CSS3, <code>Bootstrap 5</code>, <code>Leaflet</code></li>
-            <li><strong>Backend :</strong> Java (Spring Boot), Maven</li>
-            <li><strong>APIs externes :</strong> Cyclocity (GBFS), BAN (Base Adresse Nationale), OpenStreetMap</li>
+            <li><strong>Backend :</strong> Java, Maven, JBDC, MySQL</li>
+            <li><strong>APIs externes :</strong> Cyclocity (GBFS), CIFS (incidents)</li>
             <li><strong>Outils :</strong> npm, IntelliJ IDEA</li>
         </ul>
     </section>
@@ -64,7 +64,9 @@
             <li><strong>Backend :</strong>
                 <ul>
                     <li>API REST pour la gestion des restaurants et des réservations</li>
-                    <li>Proxy pour les données incidents et agrégation des sources externes</li>
+                    <li>Proxy (Service central) équipé d'un routeur pour diriger vers les differents services</li>
+                    <li>Service Database inscrit sur le SC, servant à consulter la base avec JDBC permettant la réservation et la consultation des restaurants</li>
+                    <li>Service Data inscrit sur le SC, servant à consulter l'API CIFS pour les incidents pour retransmettre les données au client</li>
                 </ul>
             </li>
         </ul>

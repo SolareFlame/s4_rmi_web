@@ -330,6 +330,79 @@ function afficherReservationForm(restaurant) {
 }
 
 // Réservation restaurant
+
+// Réserver un créneau alternatif
+function reserverCreneauAlternatif(id, nom, prenom, telephone, nbPers, creneauChoisi) {
+    // Fermer le popup des créneaux
+    if (window.currentCreneauxPopup) {
+        window.currentCreneauxPopup.remove();
+        window.currentCreneauxPopup = null;
+    }
+    // Ajouter le T au créneau choisi
+    const dateOriginale = creneauChoisi.split(' ')[0];
+    creneauChoisi = `${dateOriginale}T${creneauChoisi.split(' ')[1]}`;
+
+    // Faire la réservation avec le nouveau créneau
+    const res = reserverRestaurant(id, nom, prenom, telephone, nbPers, creneauChoisi);
+    if (res) {
+        //fermer la modale des créneaux alternatifs
+        fermerPopupCreneaux();
+    }
+}
+
+// Fermer le popup des créneaux
+function fermerPopupCreneaux() {
+    if (window.currentCreneauxPopup) {
+        window.currentCreneauxPopup.remove();
+        window.currentCreneauxPopup = null;
+    }
+}
+
+
+// Afficher les créneaux alternatifs quand aucune table n'est disponible
+// Version avec modale Bootstrap
+function afficherCreneauxAlternatifs(creneaux, id, nom, prenom, telephone, nbPers, dateOriginale) {
+    const modalHtml = `
+        <div class="modal fade" id="creneauxModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-white">
+                        <h5 class="modal-title">⚠️ Aucune table disponible</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Aucune table n'est disponible pour <strong>${dateOriginale}</strong> avec ${nbPers} personne(s).</p>
+                        <h6>Créneaux alternatifs disponibles :</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            ${creneaux.map(creneau =>
+        `<button class="btn btn-outline-primary btn-sm" onclick="reserverCreneauAlternatif('${id}', '${nom}', '${prenom}', '${telephone}', '${nbPers}', '${creneau}')">${creneau}</button>`
+    ).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Ajouter la modale au DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Afficher la modale
+    const modal = new bootstrap.Modal(document.getElementById('creneauxModal'));
+    modal.show();
+
+    // Supprimer la modale du DOM quand elle est fermée
+    document.getElementById('creneauxModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+
+
+// Réservation restaurant
 async function reserverRestaurant(id, nom, prenom, telephone, nbPers, date) {
     console.log(`Réservation pour le restaurant ID: ${id}, Nom: ${nom}, Prénom: ${prenom}, Téléphone: ${telephone}, NbPers: ${nbPers} Date: ${date}`);
     try {
@@ -349,11 +422,36 @@ async function reserverRestaurant(id, nom, prenom, telephone, nbPers, date) {
         });
 
         const result = await response.json();
-        console.log('Réservation effectuée:', result);
+
+        if (response.status === 201) {
+            // Réservation réussie
+            console.log('Réservation effectuée avec succès:', result);
+            alert(`Table réservée avec succès ! Table n°${result.data.numtab} pour le ${result.data.date} à ${result.data.heure}`);
+
+        } else if (response.status === 404) {
+            // Aucune table disponible - afficher les créneaux alternatifs
+            console.log('Aucune table disponible. Créneaux proposés:', result);
+            afficherCreneauxAlternatifs(result.data, id, nom, prenom, telephone, nbPers, date);
+
+        } else if (response.status === 409) {
+            // Table non disponible
+            alert('La table sélectionnée n\'est pas disponible pour cette date et heure.');
+
+        } else if (response.status === 400) {
+            // Table trop petite
+            alert('Aucune table assez grande n\'est disponible pour ce nombre de personnes.');
+
+        } else {
+            // Autres erreurs
+            throw new Error(result.message || 'Erreur lors de la réservation');
+        }
+
     } catch (error) {
         console.error('Erreur lors de la réservation:', error);
+        alert('Erreur lors de la réservation: ' + error.message);
     }
 }
+
 
 // Centrer la carte sur un restaurant
 function centerOnRestaurant(lat, lon) {
@@ -365,7 +463,7 @@ function centerOnRestaurant(lat, lon) {
 
 // Calculer l'itinéraire vers un restaurant
 function routeToRestaurant(restaurantName, lat, lon) {
-    map.locate({setView: false});
+    map.locate();
 
     map.once('locationfound', function (e) {
         if (routingControl) {
@@ -381,10 +479,6 @@ function routeToRestaurant(restaurantName, lat, lon) {
             geocoder: L.Control.Geocoder.nominatim(),
             createMarker: function () { return null; }
         }).addTo(map);
-
-        if (typeof showToast === 'function') {
-            showToast(`Itinéraire vers ${restaurantName} calculé !`, 'success', '🧭');
-        }
     });
 
     map.once('locationerror', function (e) {

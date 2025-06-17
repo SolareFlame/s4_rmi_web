@@ -173,6 +173,7 @@ public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serial
 
             // on renvoie une liste d'autres crénaux disponibles
             ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(dateHeure, id_restau);
+            System.out.println("Creneaux disponibles : " + creneauxDispo);
             return toJson(creneauxDispo, 404);
         }
 
@@ -520,7 +521,6 @@ public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serial
             System.out.println("Registre RMI créé sur le port : " + port);
 
             String nom = "serviceDB";
-            ServiceDatabaseInterface dbService = (ServiceDatabaseInterface) UnicastRemoteObject.exportObject(this, 0);
             ServiceDatabaseInterface dbService = (ServiceDatabaseInterface) UnicastRemoteObject.exportObject(this, 0);
             registry.rebind(nom, dbService);
 

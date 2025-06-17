@@ -181,10 +181,10 @@ public class Table {
 
             // Générer les créneaux de 15 minutes entre -1h et +1h
             Calendar calDebut = (Calendar) cal.clone();
-            calDebut.add(Calendar.HOUR, -1);
+            calDebut.add(Calendar.HOUR, -2);
 
             Calendar calFin = (Calendar) cal.clone();
-            calFin.add(Calendar.HOUR, 1);
+            calFin.add(Calendar.HOUR, 2);
 
             // Tester chaque créneau de 15 minutes
             Calendar calCourant = (Calendar) calDebut.clone();
@@ -203,7 +203,7 @@ public class Table {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-
+        System.out.println("Créneaux disponibles : " + new Gson().toJson(creneauxDisponibles));
         return creneauxDisponibles;
     }
 

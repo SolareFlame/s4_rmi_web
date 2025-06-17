@@ -5,8 +5,13 @@ import com.sun.net.httpserver.HttpHandler;
 import database.ServeurNonIdentifieException;
 import proxy.ServiceProxyInterface;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static config.JSONSender.*;
 
@@ -42,6 +47,10 @@ public class DatabaseRouter implements HttpHandler {
                 switch (exchange.getRequestMethod()) {
                     case "GET":
                         System.out.println("GET request to /database/restaurants");
+                        // Extraire les paramètres de requête
+                        Map<String, Object> queryParams = parseQueryParameters(exchange);
+                        System.out.println("Query parameters: " + queryParams);
+
                         String getResponse = s_p.getServiceDatabase().consulterToutesDonneesRestoNancy();
                         sendJson(exchange, getResponse);
                         break;
@@ -57,6 +66,7 @@ public class DatabaseRouter implements HttpHandler {
                             return;
                         }
                         String postResponse = s_p.getServiceDatabase().demandeReservationTable(jsonBody);
+
                         sendJson(exchange, postResponse);
                         break;
 
@@ -73,5 +83,50 @@ public class DatabaseRouter implements HttpHandler {
             return;
         }
         sendJson(exchange, toErrorJson("Not Found: " + path, 404));
+    }
+
+    /**
+     * Parse les paramètres de requête avec support des valeurs multiples
+     * @param exchange L'échange HTTP
+     * @return Map contenant les paramètres avec leurs valeurs (potentiellement multiples)
+     */
+    private Map<String, Object> parseQueryParameters(HttpExchange exchange) {
+        Map<String, Object> parameters = new HashMap<>();
+
+        URI requestURI = exchange.getRequestURI();
+        String query = requestURI.getRawQuery();
+
+        if (query != null && !query.isEmpty()) {
+            String[] pairs = query.split("&");
+
+            for (String pair : pairs) {
+                try {
+                    String[] keyValue = pair.split("=", 2);
+                    String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8.name());
+                    String value = keyValue.length > 1 ?
+                            URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.name()) : "";
+
+                    // Gérer les paramètres multiples
+                    if (parameters.containsKey(key)) {
+                        Object existingValue = parameters.get(key);
+                        if (existingValue instanceof java.util.List) {
+                            ((java.util.List<String>) existingValue).add(value);
+                        } else {
+                            java.util.List<String> values = new java.util.ArrayList<>();
+                            values.add((String) existingValue);
+                            values.add(value);
+                            parameters.put(key, values);
+                        }
+                    } else {
+                        parameters.put(key, value);
+                    }
+
+                } catch (UnsupportedEncodingException e) {
+                    System.err.println("Erreur lors du décodage du paramètre: " + pair);
+                }
+            }
+        }
+
+        return parameters;
     }
 }

@@ -1,4 +1,3 @@
-// Variables globales
 let map;
 let routingControl = null;
 let stationsData = [];
@@ -8,12 +7,20 @@ let restaurantsLayer;
 let incidentsData = [];
 let incidentsLayer;
 
-// Initialisation de la carte
 async function initMap() {
     try {
         const apiUrl = `${CONFIG.get('BAN_API_URL')}?q=${CONFIG.get('DEFAULT_CITY')}&limit=${CONFIG.getInt('BAN_API_LIMIT')}`;
         const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+            throw new Error(`Erreur API BAN: ${response.status}`);
+        }
+
         const data = await response.json();
+
+        if (!data.features || data.features.length === 0) {
+            throw new Error('Aucune donnée de géolocalisation trouvée');
+        }
 
         const coordinates = data.features[0].geometry.coordinates;
         const lat = coordinates[1];
@@ -22,7 +29,7 @@ async function initMap() {
         map = L.map('map').setView([lat, lon], CONFIG.getInt('DEFAULT_ZOOM'));
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);
-        map = L.map('map').setView([CONFIG.get('FALLBACK_LAT'), CONFIG.get('FALLBACK_LNG')], CONFIG.getInt('DEFAULT_ZOOM'));
+        map = L.map('map').setView([CONFIG.get('DEFAULT_LAT'), CONFIG.get('DEFAULT_LON')], CONFIG.getInt('DEFAULT_ZOOM'));
     }
 
     L.tileLayer(CONFIG.get('TILE_URL'), {
@@ -32,12 +39,13 @@ async function initMap() {
 
     markersLayer = L.layerGroup().addTo(map);
 
-    loadStationsData();
-    loadRestaurantsData();
-    loadIncidentsData();
+    await Promise.allSettled([
+        loadStationsData(),
+        loadRestaurantsData(),
+        loadIncidentsData()
+    ]);
 }
 
-// Géolocalisation
 function geolocateUser() {
     const btn = document.querySelector('.btn-success-custom');
     const originalText = btn.innerHTML;
@@ -61,13 +69,12 @@ function geolocateUser() {
     });
 
     map.on('locationerror', function (e) {
-        alert('Géolocalisation impossible : ' + e.message);
+        showErrorPopup('Géolocalisation impossible', e.message);
         btn.innerHTML = originalText;
         btn.disabled = false;
     });
 }
 
-// Rechargement de la carte
 function reloadMap() {
     const btn = document.querySelector('.btn-primary-custom');
     const reloadText = document.getElementById('reload-text');
@@ -85,7 +92,6 @@ function reloadMap() {
     }, CONFIG.getInt('RELOAD_DELAY'));
 }
 
-// Afficher toutes les stations
 function showAllStations() {
     if (stationsData.length > 0) {
         const group = new L.featureGroup(Object.values(markersLayer._layers));
@@ -93,9 +99,8 @@ function showAllStations() {
     }
 }
 
-// Création d'un marqueur pour un restaurant
 function createRestaurantMarker(restaurant) {
-    const marker = L.marker([restaurant.lat, restaurant.lng], {
+    const marker = L.marker([restaurant.lat, restaurant.lon], {
         icon: L.divIcon({
             className: 'custom-restaurant-marker',
             html: `
@@ -126,7 +131,6 @@ function createRestaurantMarker(restaurant) {
     restaurantsLayer.addLayer(marker);
 }
 
-// Création du contenu du popup restaurant
 function createRestaurantPopupContent(restaurant) {
     return `
         <div style="min-width: 280px; font-family: var(--font-primary);">
@@ -170,9 +174,9 @@ function createRestaurantPopupContent(restaurant) {
                     gap: 10px;
                     margin-top: 15px;
                 ">
-                    <button onclick="routeToRestaurant('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lng})" 
+                    <button onclick="routeToRestaurant('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lon})" 
                             style="
-                                background: var(--gradient-primary);
+                                background: var(--primary-color);
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -185,9 +189,9 @@ function createRestaurantPopupContent(restaurant) {
                         🧭 Itinéraire
                     </button>
                     
-                    <button onclick="centerOnRestaurant(${restaurant.lat}, ${restaurant.lng})" 
+                    <button onclick="centerOnRestaurant(${restaurant.lat}, ${restaurant.lon})" 
                             style="
-                                background: var(--gradient-secondary);
+                                background: var(--primary-color);
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -200,9 +204,9 @@ function createRestaurantPopupContent(restaurant) {
                         🎯 Centrer
                     </button>
                     
-                    <button onclick="afficherReservationForm('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lng})"
+                    <button onclick="afficherReservationForm(${JSON.stringify(restaurant).replace(/"/g, '&quot;')})"
                             style="
-                                background: var(--gradient-accent);
+                                background: var(--primary-color);
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -220,7 +224,6 @@ function createRestaurantPopupContent(restaurant) {
     `;
 }
 
-// Traitement des données des restaurants
 function processRestaurantsData(restaurants) {
     if (restaurantsLayer) {
         restaurantsLayer.clearLayers();
@@ -233,10 +236,12 @@ function processRestaurantsData(restaurants) {
     restaurants.forEach((restaurant, index) => {
         try {
             const restaurantData = {
-                ...restaurant,
-                lat: restaurant.lat,
-                lng: restaurant.lon,
-                address: `${restaurant.numero_rue}, ${restaurant.rue} - ${restaurant.ville}`
+                id_restau: restaurant.id_restau,
+                nom: restaurant.nom || 'Restaurant sans nom',
+                address: `${restaurant.numero_rue || ''} ${restaurant.rue || ''}, ${restaurant.ville || ''}`.trim(),
+                coordonee: restaurant.lat && restaurant.lon ? `${restaurant.lat}, ${restaurant.lon}` : 'Coordonnées non disponibles',
+                lat: parseFloat(restaurant.lat) || CONFIG.getNumber('DEFAULT_LAT'),
+                lon: parseFloat(restaurant.lon) || CONFIG.getNumber('DEFAULT_LON')
             };
 
             restaurantsData.push(restaurantData);
@@ -246,18 +251,20 @@ function processRestaurantsData(restaurants) {
             }, index * CONFIG.getInt('MARKER_ANIMATION_DELAY'));
 
         } catch (error) {
-            console.error(`Erreur pour le restaurant ${restaurant.nom}:`, error);
+            console.error(`Erreur pour le restaurant ${restaurant.nom || 'inconnu'}:`, error);
         }
     });
 }
 
-// Chargement des données des restaurants
 async function loadRestaurantsData() {
     try {
-        const response = await fetch(CONFIG.get('RESTAURANTS_DATA_FILE'));
+        const response = await fetch(CONFIG.get('RESTAURANTS_API'));
 
         if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
+            if (response.status === 500 || response.status === 503) {
+                throw new Error(`Service temporairement indisponible (${response.status})`);
+            }
+            throw new Error(`Erreur serveur: ${response.status}`);
         }
 
         const result = await response.json();
@@ -265,18 +272,27 @@ async function loadRestaurantsData() {
         if (result.status === 200 && result.data) {
             processRestaurantsData(result.data);
         } else {
-            throw new Error('Format de données invalide');
+            throw new Error(result.error || 'Format de données invalide');
         }
     } catch (error) {
         console.error("Erreur lors du chargement des restaurants:", error);
+
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            showErrorPopup('Connexion impossible', 'Impossible de se connecter au serveur des restaurants');
+        } else {
+            showErrorPopup('Erreur restaurants', error.message);
+        }
     }
 }
 
-// Afficher le formulaire de réservation
-function afficherReservationForm(nomRestaurant, lat, lon) {
+function afficherReservationForm(restaurant) {
+    if (typeof restaurant === 'string') {
+        restaurant = JSON.parse(restaurant.replace(/&quot;/g, '"'));
+    }
+
     const formHtml = `
         <div class="reservation-form">
-            <h5>Réserver une table au ${nomRestaurant}</h5>
+            <h5>Réserver une table au ${restaurant.nom}</h5>
             <form id="reservationForm">
                 <div class="mb-3">
                     <label for="nom" class="form-label">Nom</label>
@@ -304,57 +320,222 @@ function afficherReservationForm(nomRestaurant, lat, lon) {
     `;
 
     const popup = L.popup()
-        .setLatLng([lat, lon])
+        .setLatLng([restaurant.lat, restaurant.lon])
         .setContent(formHtml)
         .openOn(map);
 
     document.getElementById('reservationForm').addEventListener('submit', function (e) {
         e.preventDefault();
-        const nom = document.getElementById('nom').value;
-        const prenom = document.getElementById('prenom').value;
-        const telephone = document.getElementById('telephone').value;
-        const date = document.getElementById('date').value;
+        const formData = {
+            nom: document.getElementById('nom').value,
+            prenom: document.getElementById('prenom').value,
+            telephone: document.getElementById('telephone').value,
+            nbPers: document.getElementById('nbPers').value,
+            date: document.getElementById('date').value
+        };
 
-        reserverRestaurant(nomRestaurant, nom, prenom, telephone, date);
+        reserverRestaurant(restaurant.id_restau, formData);
         popup.remove();
     });
 }
 
-// Réservation restaurant
-async function reserverRestaurant(restaurant, nom, prenom, telephone, date) {
+function reserverCreneauAlternatif(id, formData, creneauChoisi) {
+    if (window.currentCreneauxModal) {
+        window.currentCreneauxModal.hide();
+    }
+
+    const dateOriginale = creneauChoisi.split(' ')[0];
+    const dateFormatee = `${dateOriginale}T${creneauChoisi.split(' ')[1]}`;
+
+    reserverRestaurant(id, { ...formData, date: dateFormatee });
+}
+
+function afficherCreneauxAlternatifs(creneaux, id, formData, dateOriginale) {
+    if (!creneaux || creneaux.length === 0) {
+        showErrorPopup('Aucune disponibilité', 'Aucun créneau alternatif n\'est disponible pour ce restaurant.');
+        return;
+    }
+
+    const modalHtml = `
+        <div class="modal fade" id="creneauxModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-white">
+                        <h5 class="modal-title">⚠️ Aucune table disponible</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <strong>Date demandée :</strong> ${new Date(dateOriginale).toLocaleString('fr-FR')} 
+                            pour ${formData.nbPers} personne(s)
+                        </div>
+                        <h6 class="mb-3">Créneaux alternatifs disponibles :</h6>
+                        <div class="row g-2">
+                            ${creneaux.map(creneau =>
+        `<div class="col-md-6">
+                                    <button class="btn btn-outline-primary w-100" 
+                                            onclick="reserverCreneauAlternatif('${id}', ${JSON.stringify(formData).replace(/"/g, '&quot;')}, '${creneau}')">
+                                        📅 ${new Date(creneau.replace(' ', 'T')).toLocaleString('fr-FR')}
+                                    </button>
+                                </div>`
+    ).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = new bootstrap.Modal(document.getElementById('creneauxModal'));
+    window.currentCreneauxModal = modal;
+    modal.show();
+
+    document.getElementById('creneauxModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+        window.currentCreneauxModal = null;
+    });
+}
+
+function showSuccessReservation(reservationData) {
+    const modalHtml = `
+        <div class="modal fade" id="successModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">✅ Réservation confirmée</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="mb-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                        </div>
+                        <h6 class="mb-3">Votre table est réservée !</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-2"><strong>Table n°:</strong> ${reservationData.numtab}</p>
+                                <p class="mb-2"><strong>Date:</strong> ${new Date(reservationData.date + 'T' + reservationData.heure).toLocaleString('fr-FR')}</p>
+                                <p class="mb-0"><strong>Référence:</strong> #${reservationData.id || 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">Parfait !</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = new bootstrap.Modal(document.getElementById('successModal'));
+    modal.show();
+
+    document.getElementById('successModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+function showErrorPopup(title, message) {
+    const modalHtml = `
+        <div class="modal fade" id="errorModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">❌ ${title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger mb-0">
+                            ${message}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = new bootstrap.Modal(document.getElementById('errorModal'));
+    modal.show();
+
+    document.getElementById('errorModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+async function reserverRestaurant(id, formData) {
     try {
-        const response = await fetch(CONFIG.get('RESERVATIONS_ENDPOINT'), {
+        const response = await fetch(CONFIG.get('RESTAURANTS_API'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                restaurant: restaurant,
-                nom: nom,
-                prenom: prenom,
-                telephone: telephone,
-                date: date
+                id_restau: id,
+                nom: formData.nom,
+                prenom: formData.prenom,
+                telephone: formData.telephone,
+                nb_pers: formData.nbPers,
+                date: formData.date
             })
         });
 
-        const result = await response.json();
-        console.log('Réservation effectuée:', result);
+        let result;
+        try {
+            result = await response.json();
+        } catch (jsonError) {
+            if (response.status === 500 || response.status === 503) {
+                throw new Error('Service de réservation temporairement indisponible');
+            }
+            throw new Error('Erreur de communication avec le serveur');
+        }
+
+        if (response.status === 201) {
+            showSuccessReservation(result.data);
+        } else if (response.status === 404) {
+            afficherCreneauxAlternatifs(result.data, id, formData, formData.date);
+        } else if (response.status === 409) {
+            showErrorPopup('Table non disponible', 'La table sélectionnée n\'est pas disponible pour cette date et heure.');
+        } else if (response.status === 400) {
+            showErrorPopup('Capacité insuffisante', 'Aucune table assez grande n\'est disponible pour ce nombre de personnes.');
+        } else if (response.status === 500 || response.status === 503) {
+            const errorMessage = result.error || 'Service temporairement indisponible';
+            showErrorPopup('Erreur serveur', errorMessage);
+        } else {
+            const errorMessage = result.error || result.message || 'Erreur lors de la réservation';
+            showErrorPopup('Erreur de réservation', errorMessage);
+        }
+
     } catch (error) {
         console.error('Erreur lors de la réservation:', error);
+
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            showErrorPopup('Connexion impossible', 'Impossible de se connecter au serveur de réservation');
+        } else {
+            showErrorPopup('Erreur de réservation', error.message);
+        }
     }
 }
 
-// Centrer la carte sur un restaurant
-function centerOnRestaurant(lat, lng) {
-    map.setView([lat, lng], CONFIG.getInt('RESTAURANT_ZOOM'), {
+function centerOnRestaurant(lat, lon) {
+    map.setView([lat, lon], CONFIG.getInt('RESTAURANT_ZOOM'), {
         animate: true,
         duration: 1
     });
 }
 
-// Calculer l'itinéraire vers un restaurant
-function routeToRestaurant(restaurantName, lat, lng) {
-    map.locate({setView: false});
+function routeToRestaurant(restaurantName, lat, lon) {
+    map.locate();
 
     map.once('locationfound', function (e) {
         if (routingControl) {
@@ -364,26 +545,19 @@ function routeToRestaurant(restaurantName, lat, lng) {
         routingControl = L.Routing.control({
             waypoints: [
                 L.latLng(e.latlng.lat, e.latlng.lng),
-                L.latLng(lat, lng)
+                L.latLng(lat, lon)
             ],
             routeWhileDragging: true,
             geocoder: L.Control.Geocoder.nominatim(),
             createMarker: function () { return null; }
         }).addTo(map);
-
-        if (typeof showToast === 'function') {
-            showToast(`Itinéraire vers ${restaurantName} calculé !`, 'success', '🧭');
-        }
     });
 
     map.once('locationerror', function (e) {
-        if (typeof showToast === 'function') {
-            showToast('Géolocalisation impossible : ' + e.message, 'error', '❌');
-        }
+        showErrorPopup('Géolocalisation impossible', e.message);
     });
 }
 
-// Afficher tous les restaurants
 function showAllRestaurants() {
     if (restaurantsData.length > 0) {
         const group = new L.featureGroup(Object.values(restaurantsLayer._layers));
@@ -398,7 +572,6 @@ function showAllRestaurants() {
     }
 }
 
-// Basculer l'affichage des restaurants
 function toggleRestaurants() {
     if (map.hasLayer(restaurantsLayer)) {
         map.removeLayer(restaurantsLayer);
@@ -413,30 +586,40 @@ function toggleRestaurants() {
     }
 }
 
-// Chargement des données des stations
 async function loadStationsData() {
     try {
         const gbfsUrl = `${CONFIG.get('CYCLOCITY_BASE_URL')}${CONFIG.get('CYCLOCITY_GBFS_ENDPOINT')}`;
         const gbfsResponse = await fetch(gbfsUrl);
+
+        if (!gbfsResponse.ok) {
+            throw new Error(`Erreur API GBFS: ${gbfsResponse.status}`);
+        }
+
         const gbfsData = await gbfsResponse.json();
         const stationsUrl = gbfsData.data.fr.feeds.find(feed => feed.name === "station_information").url;
 
-        const stationsResponse = await fetch(stationsUrl);
-        const stationsInfo = await stationsResponse.json();
+        const [stationsResponse, statusResponse] = await Promise.all([
+            fetch(stationsUrl),
+            fetch(`${CONFIG.get('CYCLOCITY_BASE_URL')}${CONFIG.get('CYCLOCITY_STATUS_ENDPOINT')}`)
+        ]);
 
-        const statusUrl = `${CONFIG.get('CYCLOCITY_BASE_URL')}${CONFIG.get('CYCLOCITY_STATUS_ENDPOINT')}`;
-        const statusResponse = await fetch(statusUrl);
-        const statusData = await statusResponse.json();
+        if (!stationsResponse.ok || !statusResponse.ok) {
+            throw new Error('Erreur lors du chargement des données des stations');
+        }
+
+        const [stationsInfo, statusData] = await Promise.all([
+            stationsResponse.json(),
+            statusResponse.json()
+        ]);
 
         processStationsData(stationsInfo.data.stations, statusData.data.stations);
 
     } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
-        alert("Erreur lors du chargement des données des stations");
+        showErrorPopup('Erreur stations', 'Impossible de charger les données des stations de vélos');
     }
 }
 
-// Traitement et affichage des stations
 function processStationsData(stations, statuses) {
     const statusMap = new Map(statuses.map(s => [s.station_id, s]));
     let totalBikes = 0;
@@ -467,7 +650,6 @@ function processStationsData(stations, statuses) {
     updateStats(totalBikes, totalDocks);
 }
 
-// Création d'un marqueur pour une station
 function createStationMarker(station) {
     const cbText = station.rental_methods && station.rental_methods.includes('creditcard') ? ' (CB)' : '';
     const isOperational = station.is_renting && station.is_returning;
@@ -514,7 +696,6 @@ function createStationMarker(station) {
     markersLayer.addLayer(marker);
 }
 
-// Création du contenu du popup station
 function createStationPopupContent(station, cbText, isOperational) {
     return `
         <div style="min-width: 250px;">
@@ -562,31 +743,53 @@ function createStationPopupContent(station, cbText, isOperational) {
 async function loadIncidentsData() {
     try {
         const response = await fetch(CONFIG.get('INCIDENTS_API_URL'));
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log('Données incidents reçues:', data);
 
-        // Vérifier le format des données reçues
+        if (!response.ok) {
+            if (response.status === 500 || response.status === 503) {
+                throw new Error(`Service d'incidents temporairement indisponible (${response.status})`);
+            }
+            throw new Error(`Erreur serveur incidents: ${response.status}`);
+        }
+
+        const data = await response.json();
+
         if (Array.isArray(data.data)) {
-            // Si data est directement un tableau
             processIncidentsData(data.data);
         } else if (data.data.incidents && Array.isArray(data.data.incidents)) {
-            // Si data contient une propriété 'incidents' qui est un tableau
             processIncidentsData(data.data.incidents);
         } else {
             console.error('Format inattendu des données incidents:', data.data);
-            console.log('Structure reçue:', Object.keys(data.data));
         }
     } catch (error) {
         console.error("Erreur lors du chargement des incidents:", error);
+
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            console.warn('Service d\'incidents non disponible');
+        } else {
+            console.warn('Erreur incidents:', error.message);
+        }
     }
 }
 
 function createIncidentMarker(incident) {
-    const lat = incident.location.polyline.split(' ')[0];
-    const lon = incident.location.polyline.split(' ')[1];
+    let lat, lon;
+
+    if (incident.location && incident.location.polyline) {
+        if (typeof incident.location.polyline === 'string') {
+            const coords = incident.location.polyline.split(' ');
+            lat = parseFloat(coords[0]);
+            lon = parseFloat(coords[1]);
+        } else if (Array.isArray(incident.location.polyline)) {
+            lat = parseFloat(incident.location.polyline[0]);
+            lon = parseFloat(incident.location.polyline[1]);
+        }
+    }
+
+    if (isNaN(lat) || isNaN(lon)) {
+        console.warn('Coordonnées invalides pour l\'incident:', incident);
+        return;
+    }
+
     const marker = L.marker([lat, lon], {
         icon: L.divIcon({
             className: 'custom-incident-marker',
@@ -630,7 +833,7 @@ function createIncidentPopupContent(incident) {
                 <strong>Description :</strong> ${incident.description || 'Aucune description fournie'}
             </p>
             <p style="margin-bottom: 10px; color: #6c757d;">
-                <strong>Date :</strong> ${new Date(incident.date).toLocaleString() || 'Inconnue'}
+                <strong>Date :</strong> ${incident.date ? new Date(incident.date).toLocaleString() : 'Inconnue'}
             </p>
         </div>
     `;
@@ -649,7 +852,7 @@ function processIncidentsData(incidents) {
         try {
             const incidentData = {
                 ...incident,
-                location: incident.location || { polyline: [CONFIG.get('FALLBACK_LAT'), CONFIG.get('FALLBACK_LNG')] }
+                location: incident.location || { polyline: [CONFIG.get('DEFAULT_LAT'), CONFIG.get('DEFAULT_LON')] }
             };
 
             incidentsData.push(incidentData);
@@ -664,8 +867,6 @@ function processIncidentsData(incidents) {
     });
 }
 
-
-// Fonction pour trouver la station la plus proche
 function findNearestStation(latlng) {
     if (stationsData.length === 0) {
         return null;
@@ -687,7 +888,6 @@ function findNearestStation(latlng) {
     return nearestStation;
 }
 
-// Fonction pour tracer un itinéraire vers la station la plus proche
 function routeToNearestStation() {
     map.locate({setView: false, maxZoom: CONFIG.getInt('LOCATION_MAX_ZOOM')});
 
@@ -698,7 +898,7 @@ function routeToNearestStation() {
 
         const nearestStation = findNearestStation(e.latlng);
         if (!nearestStation) {
-            alert('Aucune station trouvée à proximité.');
+            showErrorPopup('Station introuvable', 'Aucune station trouvée à proximité.');
             return;
         }
 
@@ -712,8 +912,6 @@ function routeToNearestStation() {
             createMarker: function () { return null; }
         }).addTo(map);
 
-        console.log('Itinéraire vers la station la plus proche tracé avec succès.');
-
         const popupContent = `
             <strong><i class="fas fa-bicycle me-1"></i>Station la plus proche :</strong><br>
             ${nearestStation.name} (${nearestStation.bikes_available} vélos disponibles)
@@ -725,17 +923,18 @@ function routeToNearestStation() {
     });
 
     map.on('locationerror', function (e) {
-        alert('Géolocalisation impossible : ' + e.message);
+        showErrorPopup('Géolocalisation impossible', e.message);
     });
 }
 
-// Mise à jour des statistiques
 function updateStats(totalBikes, totalDocks) {
-    document.getElementById('total-bikes').textContent = totalBikes;
-    document.getElementById('total-docks').textContent = totalDocks;
+    const bikesElement = document.getElementById('total-bikes');
+    const docksElement = document.getElementById('total-docks');
+
+    if (bikesElement) bikesElement.textContent = totalBikes;
+    if (docksElement) docksElement.textContent = totalDocks;
 }
 
-// Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function () {
     initMap();
 });

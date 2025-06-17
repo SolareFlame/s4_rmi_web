@@ -154,25 +154,26 @@ public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serial
         JsonObject param = gson.fromJson(JSONdata, JsonObject.class); //ApiParser.parseQuery(JSONdata);
         System.out.println("map : " + param);
 
-        int numRestau = param.get("numrestau").getAsInt();
-        String date = param.get("date").getAsString();
-        String heure = param.get("heure").getAsString();
-        int nbpers = param.get("nbpers").getAsInt();
+        int id_restau = param.get("id_restau").getAsInt();
         String nom = param.get("nom").getAsString();
         String prenom = param.get("prenom").getAsString();
         String telephone = param.get("telephone").getAsString();
-        System.out.println("numRestau : " + numRestau + ", date : " + date + ", heure : " + heure + " nbpers : " + nbpers + ", nom : " + nom + ", prenom : " + prenom + ", telephone : " + telephone);
+        int nb_pers = param.get("nb_pers").getAsInt();
+        String date = param.get("date").getAsString().split("T")[0]; //YYYY-MM-DD
+        String heure = param.get("date").getAsString().split("T")[1]; //HH:MM
+        String dateHeure = date + " " + heure + ":00";
 
         // on verifie que le serveur est connecté
         if (numserv == -1) throw new ServeurNonIdentifieException();
 
-        Table tableChosie = Table.choisirMeilleureTable(date + " " + heure, numRestau, nbpers);
+        Table tableChosie = Table.choisirMeilleureTable(date + " " + heure, id_restau, nb_pers);
 
         if (tableChosie == null) {
             System.out.println("Aucune table disponible pour cette date et heure");
 
             // on renvoie une liste d'autres crénaux disponibles
-            ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(date, numRestau);
+            ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(dateHeure, id_restau);
+            System.out.println("Creneaux disponibles : " + creneauxDispo);
             return toJson(creneauxDispo, 404);
         }
 
@@ -194,14 +195,14 @@ public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serial
         System.out.println("  - Table est disponible");
 
         // on verifie que la table puisse accueillir le nombre de personnes
-        if (!Table.isBigEnough(numtab, nbpers)) {
+        if (!Table.isBigEnough(numtab, nb_pers)) {
             System.out.println("La table n'est pas assez grande");
             //return toJsonReservation("ERROR", "La table n'est pas assez grande");
             return toErrorJson("La table n'est pas assez grande", 400);
         }
         System.out.println("  - Table assez grande");
 
-        if (reserverTable(numtab, date, heure, nbpers, nom, prenom, telephone)) {
+        if (reserverTable(numtab, date, heure, nb_pers, nom, prenom, telephone)) {
             System.out.println("Table réservée avec succès");
             //return toJsonReservation("OK", "Table réservée avec succès");
             return toJson(Map.of(
@@ -209,7 +210,7 @@ public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serial
                     "numtab", numtab,
                     "date", date,
                     "heure", heure,
-                    "nbpers", nbpers,
+                    "nbpers", nb_pers,
                     "nom", nom,
                     "prenom", prenom,
                     "telephone", telephone
@@ -568,12 +569,15 @@ public class ServiceDatabase implements ServiceDatabaseInterface, Remote, Serial
         Gson gson = new Gson();
         JsonObject param = gson.fromJson(JSONdata, JsonObject.class);
 
-        int idRestau = param.get("idRestau").getAsInt();
-        String date = param.get("date").getAsString();
+        int id_restau = param.get("id_restau").getAsInt();
+        String date = param.get("date").getAsString().split("T")[0]; // YYYY-MM-DD
+        String heure = param.get("date").getAsString().split("T")[1]; // HH:MM
+        String dateHeure = date + " " + heure + ":00";
+
 
         if (numserv == -1) throw new ServeurNonIdentifieException();
 
-        ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(date, idRestau);
+        ArrayList<String> creneauxDispo = Table.getHeuresDisponibles(dateHeure, id_restau);
 
         return toJson(creneauxDispo, 200);
     }

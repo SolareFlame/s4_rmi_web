@@ -174,16 +174,17 @@ public class Table {
         try {
             // Parser la date/heure demandée
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Date heureDemandeе = sdf.parse(dateHeure);
+            Date heureDemandee = sdf.parse(dateHeure);
+            System.out.println("Date demandée : " + heureDemandee);
             Calendar cal = Calendar.getInstance();
-            cal.setTime(heureDemandeе);
+            cal.setTime(heureDemandee);
 
             // Générer les créneaux de 15 minutes entre -1h et +1h
             Calendar calDebut = (Calendar) cal.clone();
-            calDebut.add(Calendar.HOUR, -1);
+            calDebut.add(Calendar.HOUR, -2);
 
             Calendar calFin = (Calendar) cal.clone();
-            calFin.add(Calendar.HOUR, 1);
+            calFin.add(Calendar.HOUR, 2);
 
             // Tester chaque créneau de 15 minutes
             Calendar calCourant = (Calendar) calDebut.clone();
@@ -202,7 +203,7 @@ public class Table {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-
+        System.out.println("Créneaux disponibles : " + new Gson().toJson(creneauxDisponibles));
         return creneauxDisponibles;
     }
 
@@ -339,6 +340,7 @@ public class Table {
         Connection co = DBConnection.getConnection();
 
         try {
+            dateHeure = dateHeure.replace("T", " ") + ":00"; // Assurer le format correct
             // Calculer la fenêtre de conflit (±1h30 pour tenir compte de la durée des réservations)
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Date heureDemandee = sdf.parse(dateHeure);

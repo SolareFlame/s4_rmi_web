@@ -47,7 +47,7 @@ async function initMap() {
 }
 
 function geolocateUser() {
-    const btn = document.querySelector('.btn-success-custom');
+    const btn = document.querySelector('.btn-success');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<span class="loading-spinner me-2"></span>Localisation...';
     btn.disabled = true;
@@ -76,7 +76,7 @@ function geolocateUser() {
 }
 
 function reloadMap() {
-    const btn = document.querySelector('.btn-primary-custom');
+    const btn = document.querySelector('.btn-primary');
     const reloadText = document.getElementById('reload-text');
     const originalText = reloadText.textContent;
 

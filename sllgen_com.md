@@ -1,1 +1,1 @@
-keytool -genkeypair -alias server_name -keyalg RSA -keysize 2048 -validity 365 -keystore serveur_keystore.jks -storepass password -keypass password -dname "CN=localhost, OU=a, O=a, L=Paris, S=Ile-de-France, C=FR"
+keytool -genkeypair -alias miaam -keyalg RSA -keysize 2048 -validity 365 -keystore serveur_keystore.jks -storepass monpassword -keypass monpassword -dname "CN=localhost, OU=a, O=a, L=Paris, S=Ile-de-France, C=FR"

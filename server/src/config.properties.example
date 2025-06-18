@@ -7,7 +7,7 @@ portDB=3306
 nameDB=miaam
 
 # SERVICE API (Service Central)
-host=192.168.212.113
+host=localhost
 port=8080
 
 # RMI
@@ -21,5 +21,3 @@ api.url=https://carto.g-ny.org/data/cifs/cifs_waze_v2.json
 # SSL
 keystore_path=serveur_keystore.jks
 keystore_password=monpassword
-
-

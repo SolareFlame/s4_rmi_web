@@ -1,7 +1,7 @@
 {
   "name": "velostan-nancy",
   "version": "1.0.0",
-  "description": "Carte interactive des stations VélOstan'lib à Nancy avec Leaflet, MapTiler, Bootstrap et Font Awesome",
+  "description": "Carte interactive des stations VélOstan'lib",
   "main": "index.js",
   "scripts": {
     "start": "http-server -p 8000",
@@ -23,6 +23,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.4.0",
     "bootstrap": "^5.3.0",
+    "dotenv": "^16.5.0",
     "http-server": "^14.1.1",
     "leaflet": "^1.9.4",
     "leaflet-routing-machine": "^3.2.12",

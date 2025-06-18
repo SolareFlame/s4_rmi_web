@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport de Projet - Application de Cartographie Interactive</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; color: #222; margin: 0; }
+        header { background: #343a40; color: #fff; padding: 2rem 1rem; text-align: center; }
+        header h1, header h2 {color: #fff;}
+        main { max-width: 900px; margin: 2rem auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 2rem; }
+        h1, h2, h3 { color: #2c3e50; }
+        section { margin-bottom: 2rem; }
+        ul { margin: 0 0 1rem 2rem; }
+        code { background: #eee; padding: 2px 6px; border-radius: 4px; }
+        footer { text-align: center; color: #888; margin: 2rem 0 1rem 0; }
+    </style>
+</head>
+<body>
+<header>
+    <h1 id="titre">Rapport de Projet</h1>
+    <h2>Application de Cartographie Interactive - Nancy</h2>
+</header>
+<main>
+    <section>
+        <h2>Contexte</h2>
+        <p>
+            Ce projet propose une application web interactive permettant de visualiser sur une carte les stations de vélos en libre-service, les restaurants et les incidents signalés dans la ville de Nancy. L’application vise à faciliter la mobilité urbaine et l’accès à l’information en temps réel.
+        </p>
+    </section>
+
+    <section>
+        <h2>Technologies utilisées</h2>
+        <ul>
+            <li><strong>Frontend :</strong> JavaScript, HTML5, CSS3, <code>Bootstrap 5</code>, <code>Leaflet</code></li>
+            <li><strong>Backend :</strong> Java, Maven, JBDC, MySQL</li>
+            <li><strong>APIs externes :</strong> Cyclocity (GBFS), CIFS (incidents)</li>
+            <li><strong>Outils :</strong> npm, IntelliJ IDEA</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Fonctionnalités principales</h2>
+        <ul>
+            <li>Affichage dynamique des stations de vélos avec disponibilité en temps réel</li>
+            <li>Visualisation et réservation de restaurants sur la carte</li>
+            <li>Affichage des incidents de circulation</li>
+            <li>Géolocalisation de l’utilisateur et calcul d’itinéraires (vers station ou restaurant)</li>
+            <li>Statistiques globales (nombre de vélos, places libres, etc.)</li>
+            <li>Interface responsive et ergonomique</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Architecture générale</h2>
+        <ul>
+            <li><strong>Frontend :</strong>
+                <ul>
+                    <li><code>index.html</code> : structure de la page et intégration des composants</li>
+                    <li><code>script.js</code> : logique de la carte, gestion des données, interactions utilisateur</li>
+                    <li><code>config.js</code> : centralisation des URLs et paramètres de configuration</li>
+                </ul>
+            </li>
+            <li><strong>Backend :</strong>
+                <ul>
+                    <li>API REST pour la gestion des restaurants et des réservations</li>
+                    <li>Proxy (Service central) équipé d'un routeur pour diriger vers les differents services</li>
+                    <li>Service Database inscrit sur le SC, servant à consulter la base avec JDBC permettant la réservation et la consultation des restaurants</li>
+                    <li>Service Data inscrit sur le SC, servant à consulter l'API CIFS pour les incidents pour retransmettre les données au client</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Points techniques notables</h2>
+        <ul>
+            <li>Utilisation de <code>Leaflet</code> pour la cartographie et la gestion des marqueurs personnalisés</li>
+            <li>Appels asynchrones aux APIs pour garantir la réactivité</li>
+            <li>Gestion des erreurs et affichage de modales Bootstrap pour l’expérience utilisateur</li>
+            <li>Animation progressive des marqueurs pour une meilleure lisibilité</li>
+            <li>Réservation intelligente avec proposition de créneaux alternatifs en cas d’indisponibilité</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Conclusion</h2>
+        <p>
+            Ce projet démontre l’intégration de multiples sources de données et la création d’une interface cartographique moderne, intuitive et utile pour les citoyens. Il peut être enrichi par d’autres services urbains ou adapté à d’autres villes.
+        </p>
+    </section>
+    <figure class="image-placeholder">
+        <img src="sauce.drawio.png"
+             alt="Diagramme d’architecture global"
+             style="max-width:100%; height:auto; border: 2px dashed #ccc; padding: 0.5rem;">
+    </figure>
+</main>
+<footer>
+    <p>Développé par Quentin, Zacharie, Valentin &mdash; 2025</p>
+</footer>
+</body>
+</html>

@@ -47,7 +47,7 @@ public class Restaurant {
      */
     public static List<Map<String, String>> getCoordonnees() {
         Connection co = DBConnection.getConnection();
-        String request = "SELECT nom, rue, numero_rue, ville, latitude, longitude FROM restaurant;";
+        String request = "SELECT id_restau, nom, rue, numero_rue, ville, lat, lon FROM restaurant;";
 
         List<Map<String, String>> restaurants = new LinkedList<>();
 
@@ -60,12 +60,13 @@ public class Restaurant {
                 String nomRestaurant = rs.getString("nom");
 
                 Map<String, String> coordonnees = new LinkedHashMap<String, String>();
+                coordonnees.put("id_restau", rs.getString("id_restau"));
                 coordonnees.put("nom", nomRestaurant);
                 coordonnees.put("rue", rs.getString("rue"));
                 coordonnees.put("numero_rue", rs.getString("numero_rue"));
                 coordonnees.put("ville", rs.getString("ville"));
-                coordonnees.put("latitude", rs.getString("latitude"));
-                coordonnees.put("longitude", rs.getString("longitude"));
+                coordonnees.put("lat", rs.getString("lat"));
+                coordonnees.put("lon", rs.getString("lon"));
 
                 restaurants.add(coordonnees);
             }

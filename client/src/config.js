@@ -1,7 +1,6 @@
 const CONFIG = {
     // API Configuration
     BAN_API_URL: 'https://api-adresse.data.gouv.fr/search/',
-    BAN_API_LIMIT: 1,
     CYCLOCITY_BASE_URL: 'https://api.cyclocity.fr/contracts/nancy/gbfs/',
     CYCLOCITY_GBFS_ENDPOINT: 'gbfs.json',
     CYCLOCITY_STATUS_ENDPOINT: 'v2/station_status.json',
@@ -26,7 +25,6 @@ const CONFIG = {
     RESTAURANTS_API: 'https://localhost:8080/database/restaurants/',
 
     // Timing Configuration
-    MARKER_ANIMATION_DELAY: 100,
     RELOAD_DELAY: 2000,
 
     // Helper methods

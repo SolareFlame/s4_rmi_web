@@ -9,7 +9,7 @@ let incidentsLayer;
 
 async function initMap() {
     try {
-        const apiUrl = `${CONFIG.get('BAN_API_URL')}?q=${CONFIG.get('DEFAULT_CITY')}&limit=${CONFIG.getInt('BAN_API_LIMIT')}`;
+        const apiUrl = `${CONFIG.get('BAN_API_URL')}?q=${CONFIG.get('DEFAULT_CITY')}&limit=1`;
         const response = await fetch(apiUrl);
 
         if (!response.ok) {
@@ -176,7 +176,7 @@ function createRestaurantPopupContent(restaurant) {
                 ">
                     <button onclick="routeToRestaurant('${restaurant.nom}', ${restaurant.lat}, ${restaurant.lon})" 
                             style="
-                                background: var(--primary-color);
+                                background: #0d6efd;
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -191,7 +191,7 @@ function createRestaurantPopupContent(restaurant) {
                     
                     <button onclick="centerOnRestaurant(${restaurant.lat}, ${restaurant.lon})" 
                             style="
-                                background: var(--primary-color);
+                                background: #0d6efd;
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -206,7 +206,7 @@ function createRestaurantPopupContent(restaurant) {
                     
                     <button onclick="afficherReservationForm(${JSON.stringify(restaurant).replace(/"/g, '&quot;')})"
                             style="
-                                background: var(--primary-color);
+                                background: #0d6efd;
                                 color: white;
                                 border: none;
                                 padding: 8px 12px;
@@ -246,9 +246,7 @@ function processRestaurantsData(restaurants) {
 
             restaurantsData.push(restaurantData);
 
-            setTimeout(() => {
-                createRestaurantMarker(restaurantData);
-            }, index * CONFIG.getInt('MARKER_ANIMATION_DELAY'));
+            createRestaurantMarker(restaurantData);
 
         } catch (error) {
             console.error(`Erreur pour le restaurant ${restaurant.nom || 'inconnu'}:`, error);
@@ -857,9 +855,7 @@ function processIncidentsData(incidents) {
 
             incidentsData.push(incidentData);
 
-            setTimeout(() => {
-                createIncidentMarker(incidentData);
-            }, index * CONFIG.getInt('MARKER_ANIMATION_DELAY'));
+            createIncidentMarker(incidentData);
 
         } catch (error) {
             console.error(`Erreur pour l'incident ${index}:`, error);

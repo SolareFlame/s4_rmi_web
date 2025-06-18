@@ -52,14 +52,14 @@
 
         <h3>2.3. Système de Proxy et CORS</h3>
         <p>
-            Le proxy HTTP (implémenté en Java avec <code>HttpServer</code>) intercepte les requêtes du frontend vers les APIs externes bloquées par CORS. Il authentifie et reformate les données si besoin, puis les renvoie au client. Cela permet l’accès aux données ouvertes en respectant les mesures de sécurité du navigateur.
+            Le proxy HTTPS (implémenté en Java avec <code>HttpsServer</code>) intercepte les requêtes du frontend vers les APIs externes bloquées par CORS. Il peut accéder aux données pour les redistribuer au client. Cela permet l’accès aux données ouvertes en respectant les mesures de sécurité du navigateur.
         </p>
 
         <h3>2.4. Architecture des services RMI</h3>
         <ul>
-            <li>Service RMI Java exposant des méthodes pour interroger et réserver des restaurants.</li>
-            <li>Le service s’enregistre auprès d’un registre central pour la découverte dynamique.</li>
-            <li>Les réponses sont formatées en JSON pour une intégration fluide côté frontend.</li>
+            <li>Le ServiceDatabase (RMI Java) exposant des méthodes pour interroger et réserver des restaurants.</li>
+            <li>Le ServiceData (RMI Java) exposant des méthodes pour interroger l'API des incidents.</li>
+            <li>Les réponses sont formatées en JSON pour une intégration fluide côté frontend, normalisant et facilitant la communication des données avec toutes les composants de l'application.</li>
             <li>Gestion des transactions et de la concurrence via des verrous synchronisés.</li>
         </ul>
     </section>
@@ -240,9 +240,49 @@ if (response.status === 500 || response.status === 503) {
         </ul>
     </section>
 
+    <section id="service-central">
+        <h2>7. Service Central (Proxy)</h2>
+        <p>
+            Le <strong>Service Central</strong>, aussi appelé Proxy, constitue l’élément central de communication dans l’architecture de notre application.
+            Il agit comme un point d’entrée unique pour toutes les requêtes clients, en orchestrant les échanges entre le front-end, les services RMI et la base de données.
+        </p>
+
+        <h3>Fonctionnalités principales</h3>
+        <ul>
+            <li><strong>Réception et routage des requêtes HTTP :</strong>
+                <ul>
+                    <li>Gère les endpoints principaux : <code>/ping</code>, <code>/data</code> (incidents) et <code>/database/restaurants</code>.</li>
+                    <li>Utilise des <em>handlers</em> dédiés pour traiter chaque type de requête.</li>
+                </ul>
+            </li>
+            <li><strong>Intégration avec les services distants (RMI) :</strong>
+                <ul>
+                    <li>Le Service Central est lui-même un service RMI et est enregistré dans l’annuaire RMI.</li>
+                    <li>Les services externes s’y enregistrent via les méthodes <code>enregistrerServiceDatabase(stub)</code> (restaurants)
+                        et <code>enregistrerServiceData(stub)</code> (incidents).</li>
+                    <li>Ces services sont ensuite transmis aux <em>handlers</em> pour permettre leur invocation lorsque le front-end appelle les endpoints de l'API.</li>
+                    <li>L’architecture permet de modifier ou remplacer ces services même après l’initialisation du serveur HTTPS.</li>
+                </ul>
+            </li>
+            <li><strong>Support sécurisé et compatibilité :</strong>
+                <ul>
+                    <li>Gestion des problèmes CORS.</li>
+                    <li>Utilisation d’un certificat SSL auto-signé pour chiffrer les communications HTTPS.</li>
+                </ul>
+            </li>
+            <li><strong>Normalisation JSON avec <code>JSONSender</code> :</strong>
+                <ul>
+                    <li>Uniformise les échanges JSON entre le front-end et les services RMI.</li>
+                    <li>Permet la transmission des codes d’erreur HTTP depuis les services RMI, qui sont ensuite convertis pour être retournés au client via l’<code>exchange</code>.</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+
 
     <section>
-        <h2>7. Déploiement et Infrastructure</h2>
+        <h2>8. Déploiement et Infrastructure</h2>
         <ul>
             <li>Déploiement du frontend sur le serveur webetu (hébergement statique).</li>
             <li>Déploiement des services backend (proxy, RMI) sur des machines Linux de l’IUT.</li>
@@ -251,7 +291,7 @@ if (response.status === 500 || response.status === 503) {
     </section>
 
     <section>
-        <h2>8. Maintenance et Évolutions Futures</h2>
+        <h2>9. Maintenance et Évolutions Futures</h2>
         <ul>
             <li>Ajout d’autres services (parkings, bus, événements).</li>
             <li>Optimisation de l’algorithme de recherche de station.</li>
@@ -261,7 +301,7 @@ if (response.status === 500 || response.status === 503) {
     </section>
 
     <section>
-        <h2>9. Annexes Techniques</h2>
+        <h2>10. Annexes Techniques</h2>
         <ul>
             <li><b>Extraits de configuration :</b> <code>config.js</code> centralise les URLs, clés d’API et paramètres.</li>
             <li><b>Gestion des dépendances :</b> <code>package.json</code> (npm), <code>pom.xml</code> (Maven).</li>

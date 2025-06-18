@@ -854,7 +854,7 @@ function stationPlusProche(latlon) {
         return null;
     }
 
-    let nearestStation = null;
+    let stationPlusProche = null;
     let minDistance = Infinity;
 
     stationsData.forEach(station => {
@@ -863,11 +863,11 @@ function stationPlusProche(latlon) {
 
         if (distance < minDistance) {
             minDistance = distance;
-            nearestStation = station;
+            stationPlusProche = station;
         }
     });
 
-    return nearestStation;
+    return stationPlusProche;
 }
 
 function routeStationPlusProche() {

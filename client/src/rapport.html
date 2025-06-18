@@ -2,101 +2,250 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Rapport de Projet - Application de Cartographie Interactive</title>
+    <title>Rapport Technique Exhaustif – Application Cartographique Nancy</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: Arial, sans-serif; background: #f8f9fa; color: #222; margin: 0; }
+        body { font-family: 'Inter', Arial, sans-serif; background: #f8f9fa; color: #222; margin: 0; }
         header { background: #343a40; color: #fff; padding: 2rem 1rem; text-align: center; }
         header h1, header h2 {color: #fff;}
-        main { max-width: 900px; margin: 2rem auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 2rem; }
-        h1, h2, h3 { color: #2c3e50; }
-        section { margin-bottom: 2rem; }
-        ul { margin: 0 0 1rem 2rem; }
-        code { background: #eee; padding: 2px 6px; border-radius: 4px; }
+        main { max-width: 1000px; margin: 2rem auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 2rem; }
+        h1, h2, h3, h4 { color: #2c3e50; }
+        section { margin-bottom: 2.5rem; }
+        ul, ol { margin: 0 0 1rem 2rem; }
+        code, pre { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 1em; }
+        pre { display: block; padding: 1em; overflow-x: auto; }
+        .diagram { font-family: monospace; background: #f4f4f4; border: 1px solid #ccc; padding: 1em; margin: 1em 0; border-radius: 5px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2em; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background: #f0f0f0; }
         footer { text-align: center; color: #888; margin: 2rem 0 1rem 0; }
     </style>
 </head>
 <body>
 <header>
-    <h1 id="titre">Rapport de Projet</h1>
-    <h2>Application de Cartographie Interactive - Nancy</h2>
+    <h1>Rapport Technique</h1>
+    <h2>Application de Cartographie Interactive – Nancy</h2>
 </header>
 <main>
+
     <section>
-        <h2>Contexte</h2>
+        <h2>1. Résumé Technique</h2>
         <p>
-            Ce projet propose une application web interactive permettant de visualiser sur une carte les stations de vélos en libre-service, les restaurants et les incidents signalés dans la ville de Nancy. L’application vise à faciliter la mobilité urbaine et l’accès à l’information en temps réel.
+            Ce document présente le point de vue technique de l’application. L’objectif est de fournir une vision de l’architecture distribuée, des choix faits, des algorithmes/librairies utilisés, de la robustesse et de l'optimisation de l'application ainsi que des potentielles évolutions.
         </p>
     </section>
 
     <section>
-        <h2>Technologies utilisées</h2>
-        <ul>
-            <li><strong>Frontend :</strong> JavaScript, HTML5, CSS3, <code>Bootstrap 5</code>, <code>Leaflet</code></li>
-            <li><strong>Backend :</strong> Java, Maven, JBDC, MySQL</li>
-            <li><strong>APIs externes :</strong> Cyclocity (GBFS), CIFS (incidents)</li>
-            <li><strong>Outils :</strong> npm, IntelliJ IDEA</li>
-        </ul>
-    </section>
+        <h2>2. Architecture</h2>
 
-    <section>
-        <h2>Fonctionnalités principales</h2>
-        <ul>
-            <li>Affichage dynamique des stations de vélos avec disponibilité en temps réel</li>
-            <li>Visualisation et réservation de restaurants sur la carte</li>
-            <li>Affichage des incidents de circulation</li>
-            <li>Géolocalisation de l’utilisateur et calcul d’itinéraires (vers station ou restaurant)</li>
-            <li>Statistiques globales (nombre de vélos, places libres, etc.)</li>
-            <li>Interface responsive et ergonomique</li>
-        </ul>
-    </section>
-
-    <section>
-        <h2>Architecture générale</h2>
-        <ul>
-            <li><strong>Frontend :</strong>
-                <ul>
-                    <li><code>index.html</code> : structure de la page et intégration des composants</li>
-                    <li><code>script.js</code> : logique de la carte, gestion des données, interactions utilisateur</li>
-                    <li><code>config.js</code> : centralisation des URLs et paramètres de configuration</li>
-                </ul>
-            </li>
-            <li><strong>Backend :</strong>
-                <ul>
-                    <li>API REST pour la gestion des restaurants et des réservations</li>
-                    <li>Proxy (Service central) équipé d'un routeur pour diriger vers les differents services</li>
-                    <li>Service Database inscrit sur le SC, servant à consulter la base avec JDBC permettant la réservation et la consultation des restaurants</li>
-                    <li>Service Data inscrit sur le SC, servant à consulter l'API CIFS pour les incidents pour retransmettre les données au client</li>
-                </ul>
-            </li>
-        </ul>
-    </section>
-
-    <section>
-        <h2>Points techniques notables</h2>
-        <ul>
-            <li>Utilisation de <code>Leaflet</code> pour la cartographie et la gestion des marqueurs personnalisés</li>
-            <li>Appels asynchrones aux APIs pour garantir la réactivité</li>
-            <li>Gestion des erreurs et affichage de modales Bootstrap pour l’expérience utilisateur</li>
-            <li>Animation progressive des marqueurs pour une meilleure lisibilité</li>
-            <li>Réservation intelligente avec proposition de créneaux alternatifs en cas d’indisponibilité</li>
-        </ul>
-    </section>
-
-    <section>
-        <h2>Conclusion</h2>
+        <h3>2.1. Vue d'ensemble</h3>
         <p>
-            Ce projet démontre l’intégration de multiples sources de données et la création d’une interface cartographique moderne, intuitive et utile pour les citoyens. Il peut être enrichi par d’autres services urbains ou adapté à d’autres villes.
+            L’architecture de l'application est basée sur un modèle client-serveur distribué, avec une séparation nette entre le frontend (JavaScript/HTML/CSS) et le backend (Java). Les données sont obtenues depuis des APIs publiques (GBFS, OpenStreetMap) et des services internes (restaurants et incidents), puis exposées via des URL sécurisées.
         </p>
+
+        <h3>2.2. Schéma des flux de données</h3>
+        <figure class="image-placeholder">
+            <img src="./sauce.drawio.png"
+                 alt="Diagramme d’architecture global"
+                 style="max-width:100%; height:auto; border: 2px dashed #ccc; padding: 0.5rem;">
+        </figure>
+
+        <h3>2.3. Système de Proxy et CORS</h3>
+        <p>
+            Le proxy HTTP (implémenté en Java avec <code>HttpServer</code>) intercepte les requêtes du frontend vers les APIs externes bloquées par CORS. Il authentifie et reformate les données si besoin, puis les renvoie au client. Cela permet l’accès aux données ouvertes en respectant les mesures de sécurité du navigateur.
+        </p>
+
+        <h3>2.4. Architecture des services RMI</h3>
+        <ul>
+            <li>Service RMI Java exposant des méthodes pour interroger et réserver des restaurants.</li>
+            <li>Le service s’enregistre auprès d’un registre central pour la découverte dynamique.</li>
+            <li>Les réponses sont formatées en JSON pour une intégration fluide côté frontend.</li>
+            <li>Gestion des transactions et de la concurrence via des verrous synchronisés.</li>
+        </ul>
     </section>
-    <figure class="image-placeholder">
-        <img src="sauce.drawio.png"
-             alt="Diagramme d’architecture global"
-             style="max-width:100%; height:auto; border: 2px dashed #ccc; padding: 0.5rem;">
-    </figure>
+
+    <section>
+        <h2>3. Technologies utilisées</h2>
+        <table>
+            <tr>
+                <th>Technologie/Librairie</th>
+                <th>Usage</th>
+                <th>Extrait de code</th>
+            </tr>
+            <tr>
+                <td>Leaflet.js</td>
+                <td>Affichage interactif de la carte, gestion des marqueurs et couches</td>
+                <td>
+                    <code>
+                        map = L.map('map').setView([lat, lon], zoom);
+                        L.tileLayer(url, {...}).addTo(map);
+                    </code>
+                </td>
+            </tr>
+            <tr>
+                <td>Leaflet Routing Machine</td>
+                <td>Calcul d’itinéraires piétons/vélos, affichage des trajets sur la carte</td>
+                <td>
+                    <code>
+                        routingControl = L.Routing.control({ waypoints: [...] }).addTo(map);
+                    </code>
+                </td>
+            </tr>
+            <tr>
+                <td>Leaflet Control Geocoder</td>
+                <td>Géocodage, Recherche d’adresses</td>
+                <td>
+                    <code>
+                        L.Control.geocoder().addTo(map);
+                    </code>
+                </td>
+            </tr>
+            <tr>
+                <td>Bootstrap</td>
+                <td>Site responsive, graphisme du site, modales</td>
+                <td>
+                    <code>
+                        &lt;button class="btn btn-primary"&gt;...&lt;/button&gt;
+                    </code>
+                </td>
+            </tr>
+            <tr>
+                <td>Font Awesome</td>
+                <td>Icônes (stations, incidents, restaurants)</td>
+                <td>
+                    <code>
+                        &lt;i class="fas fa-bicycle"&gt;&lt;/i&gt;
+                    </code>
+                </td>
+            </tr>
+            <tr>
+                <td>API GBFS</td>
+                <td>Récupération des données temps réel des stations vélos</td>
+                <td>
+                    <code>
+                        fetch(CYCLOCITY_BASE_URL + CYCLOCITY_GBFS_ENDPOINT)
+                    </code>
+                </td>
+            </tr>
+            <tr>
+                <td>API Adresse (Base Adresse Nationale - BAN)</td>
+                <td>Géocodage des adresses françaises (BAN)</td>
+                <td>
+                    <code>
+                        fetch(BAN_API_URL + '?q=Nancy')
+                    </code>
+                </td>
+            </tr>
+        </table>
+    </section>
+
+    <section>
+        <h2>4. Implémentation des Fonctionnalités Critiques</h2>
+
+        <h3>4.1. Géolocalisation et Calculs Géospatiaux</h3>
+        <ul>
+            <li>
+                <b>API Geolocation :</b>
+                <code>map.locate({setView: true, maxZoom: CONFIG.getInt('LOCATION_MAX_ZOOM')});</code>
+                <br>
+                Détecte la position de l’utilisateur l'affiche avec un marqueur et zoom dessus.
+            </li>
+            <li>
+                <b>Calcul de distance :</b>
+                Utilisation de <code>latlng.distanceTo()</code> de Leaflet pour déterminer la station la plus proche.
+            </li>
+            <li>
+                <b>Recherche de la station la plus proche :</b>
+                <pre>
+function stationPlusProche(latlon) {
+    if (stationsData.length === 0) {
+        return null;
+    }
+    let stationPlusProche = null;
+    let minDistance = Infinity;
+    stationsData.forEach(station => {
+        const stationLatLng = L.latLng(station.lat, station.lon);
+        const distance = latlon.distanceTo(stationLatLng);
+        if (distance < minDistance) {
+            minDistance = distance;
+            stationPlusProche = station;
+        }
+    });
+    return stationPlusProche;
+}
+            </pre>
+                Cet algorithme parcourt la liste des stations et compare les distances.
+            </li>
+            <li>
+                <b>Gestion des erreurs :</b>
+                <pre>
+if (response.status === 500 || response.status === 503) {
+    throw new Error(`Service temporairement indisponible (${response.status})`);
+}
+            </pre>
+                Permet de différencier les erreurs critiques et d’afficher des messages utilisateurs appropriés.
+            </li>
+        </ul>
+
+        <h3>4.2. Routage et Navigation</h3>
+        <ul>
+            <li>
+                <b>Intégration OpenStreetMap :</b> Utilisation de Leaflet Routing Machine pour calculer des itinéraires en temps réel.
+            </li>
+            <li>
+                <b>Algorithmes de routage :</b> Les algorithmes sous-jacents (Dijkstra, A*) sont encapsulés dans la bibliothèque, permettant des calculs rapides et fiables.
+            </li>
+            <li>
+                <b>Affichage des instructions :</b> Les instructions de navigation sont affichées dans des popups ou des panneaux latéraux, avec personnalisation des marqueurs de départ/arrivée.
+            </li>
+        </ul>
+
+        <h3>4.3. Gestion des Données en Temps Réel</h3>
+        <ul>
+            <li>Utilisation de <code>async/await</code> et des promesses pour les appels API.</li
+        </ul>
+    </section>
+
+    <section>
+        <h2>5. Sécurité et Robustesse</h2>
+        <ul>
+            <li><b>Gestion des timeouts :</b> Délais pour les appels API, avec gestion des erreurs et des valeurs par défaut en cas d'échec.</li>
+            <li><b>Rappels automatiques :</b> Rappel automatique des API en cas d’échec.</li>
+            <li><b>Gestion des statuts HTTP :</b> Différenciation des erreurs 40x et 50x pour un retour utilisateur pertinent.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>6. Déploiement et Infrastructure</h2>
+        <ul>
+            <li>Déploiement du frontend sur le serveur webetu (hébergement statique).</li>
+            <li>Déploiement des services backend (proxy, RMI) sur des machines Linux de l’IUT.</li>
+            <li>Gestion des dépendances via Maven et npm.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>7. Maintenance et Évolutions Futures</h2>
+        <ul>
+            <li>Ajout d’autres services (parkings, bus, événements).</li>
+            <li>Optimisation de l’algorithme de recherche de station.</li>
+            <li>Support multi-ville et internationalisation de l’interface.</li>
+            <li>Utilisation de frameworks modernes (React, Vue).</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>8. Annexes Techniques</h2>
+        <ul>
+            <li><b>Extraits de configuration :</b> <code>config.js</code> centralise les URLs, clés d’API et paramètres.</li>
+            <li><b>Gestion des dépendances :</b> <code>package.json</code> (npm), <code>pom.xml</code> (Maven).</li>
+            <li><b>Liens utiles :</b> <a href="https://github.com/SolareFlame/s4_rmi_web/">Dépôt Git</a></li>
+        </ul>
+    </section>
+
 </main>
 <footer>
-    <p>Développé par Quentin, Zacharie, Valentin &mdash; 2025</p>
+    <p>Développé par Zacharie HEUERTZ, Valentin KNORST et Quentin MEYER &mdash; 2025</p>
 </footer>
 </body>
 </html>

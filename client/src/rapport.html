@@ -69,6 +69,29 @@
                     <li>Service Data inscrit sur le SC, servant à consulter l'API CIFS pour les incidents pour retransmettre les données au client</li>
                 </ul>
             </li>
+            <li><strong>Service BDD :</strong>
+                <ul>
+                    <li>Base de données MySQL inspiré du TP Miaam effectué courant S3 pour stocker les informations des restaurants, des réservations et des commandes</li>
+                    <li>Utilisation de JDBC pour les interactions avec la base de données</li>
+                </ul>
+                <ul>
+                    <li>Points forts : </li>
+                    <li>Architecture modulaire et évolutive: chaque table est un objet avec les actions qui lui correspond.</li>
+                    <li>Sécurité: Un mot de passe est nécessaire pour pouvoir générer un objet ServiceDatabase, et donc y avoir accès.</li>
+                    <li>Sécurité: Chaque requête est passé au peigne fin avant d'être bêtement envoyé en base, nous vérifions à chaque fois si toutes nos conditions sont remplites minutieusement</li>
+                    <li>Sécurité: Chaque opération de modification bénéficie d'une sécurité de rollback et de verou: nous essayons d'exécuter notre requête, le cas échéant, nous annulons et revenons à l'état inital.</li>
+                    <li>Performance: Au lieu de demander par exemple à chaque fois si une table est disponible, et donc de multiplier les requêtes à la base, si l'horaire inital n'est pas disponible alors la table renvoie une liste de créneaux DISPONIBLES dans un intervalle de 2 heures afin que la prochaine requête aboutisse à un succès (ormis si un autre utilisateur a été plus rapide)</li>
+                    <li>Lisibilité: Tous nos renvoie sont uniformisé et détaillé : grâce à la méthode toJson et toErrorJson nous pouvons par exemple pour la fonction demandeReservationTable renvoyer : </li>
+                    <ul>
+                        <li>201: Table réservée avec succès</li>
+                        <li>404: Une liste de créneaux alternatifs disponibles dans un intervalle de 2 heures</li>
+                        <li>404: La table n'existe pas (Si aucune table n'a été trouvé dans un intervalle de 2 heures)</li>
+                        <li>409: La table n'est pas disponible pour cette date et heure</li>
+                        <li>400: La table n'est pas assez grande</li>
+                        <li>500: Erreur lors de la réservation de la table</li>
+                    </ul>
+                </ul>
+            </li>
         </ul>
     </section>
 

@@ -40,9 +40,9 @@ async function initMap() {
     markersLayer = L.layerGroup().addTo(map);
 
     await Promise.allSettled([
-        loadStationsData(),
-        loadRestaurantsData(),
-        loadIncidentsData()
+        chargerDonneesStations(),
+        chargerDonneesRestaurants(),
+        chargerDonneesIncidents()
     ]);
 }
 
@@ -69,7 +69,7 @@ function geolocateUser() {
     });
 
     map.on('locationerror', function (e) {
-        showErrorPopup('Géolocalisation impossible', e.message);
+        afficherPopupErreur('Géolocalisation impossible', e.message);
         btn.innerHTML = originalText;
         btn.disabled = false;
     });
@@ -84,7 +84,7 @@ function reloadMap() {
     btn.disabled = true;
 
     markersLayer.clearLayers();
-    loadStationsData();
+    chargerDonneesStations();
 
     setTimeout(() => {
         btn.innerHTML = `<i class="fas fa-sync-alt me-2"></i>${originalText}`;
@@ -99,10 +99,10 @@ function showAllStations() {
     }
 }
 
-function createRestaurantMarker(restaurant) {
+function addRestaurantMarker(restaurant) {
     const marker = L.marker([restaurant.lat, restaurant.lon], {
         icon: L.divIcon({
-            className: 'custom-restaurant-marker',
+            className: 'restaurant-marker',
             html: `
                 <div style="
                     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
@@ -126,12 +126,12 @@ function createRestaurantMarker(restaurant) {
         })
     });
 
-    const popupContent = createRestaurantPopupContent(restaurant);
-    marker.bindPopup(popupContent);
+    const popup = createRestaurantPopup(restaurant);
+    marker.bindPopup(popup);
     restaurantsLayer.addLayer(marker);
 }
 
-function createRestaurantPopupContent(restaurant) {
+function createRestaurantPopup(restaurant) {
     return `
         <div style="min-width: 280px; font-family: var(--font-primary);">
             <div style="
@@ -224,7 +224,7 @@ function createRestaurantPopupContent(restaurant) {
     `;
 }
 
-function processRestaurantsData(restaurants) {
+function traiterDonneesRestaurants(restaurants) {
     if (restaurantsLayer) {
         restaurantsLayer.clearLayers();
     } else {
@@ -246,7 +246,7 @@ function processRestaurantsData(restaurants) {
 
             restaurantsData.push(restaurantData);
 
-            createRestaurantMarker(restaurantData);
+            addRestaurantMarker(restaurantData);
 
         } catch (error) {
             console.error(`Erreur pour le restaurant ${restaurant.nom || 'inconnu'}:`, error);
@@ -254,7 +254,7 @@ function processRestaurantsData(restaurants) {
     });
 }
 
-async function loadRestaurantsData() {
+async function chargerDonneesRestaurants() {
     try {
         const response = await fetch(CONFIG.get('RESTAURANTS_API'));
 
@@ -268,7 +268,7 @@ async function loadRestaurantsData() {
         const result = await response.json();
 
         if (result.status === 200 && result.data) {
-            processRestaurantsData(result.data);
+            traiterDonneesRestaurants(result.data);
         } else {
             throw new Error(result.error || 'Format de données invalide');
         }
@@ -276,9 +276,9 @@ async function loadRestaurantsData() {
         console.error("Erreur lors du chargement des restaurants:", error);
 
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            showErrorPopup('Connexion impossible', 'Impossible de se connecter au serveur des restaurants');
+            afficherPopupErreur('Connexion impossible', 'Impossible de se connecter au serveur des restaurants');
         } else {
-            showErrorPopup('Erreur restaurants', error.message);
+            afficherPopupErreur('Erreur restaurants', error.message);
         }
     }
 }
@@ -350,7 +350,7 @@ function reserverCreneauAlternatif(id, formData, creneauChoisi) {
 
 function afficherCreneauxAlternatifs(creneaux, id, formData, dateOriginale) {
     if (!creneaux || creneaux.length === 0) {
-        showErrorPopup('Aucune disponibilité', 'Aucun créneau alternatif n\'est disponible pour ce restaurant.');
+        afficherPopupErreur('Aucune disponibilité', 'Aucun créneau alternatif n\'est disponible pour ce restaurant.');
         return;
     }
 
@@ -399,7 +399,7 @@ function afficherCreneauxAlternatifs(creneaux, id, formData, dateOriginale) {
     });
 }
 
-function showSuccessReservation(reservationData) {
+function afficherModaleReservation(reservationData) {
     const modalHtml = `
         <div class="modal fade" id="successModal" tabindex="-1">
             <div class="modal-dialog">
@@ -439,7 +439,7 @@ function showSuccessReservation(reservationData) {
     });
 }
 
-function showErrorPopup(title, message) {
+function afficherPopupErreur(title, message) {
     const modalHtml = `
         <div class="modal fade" id="errorModal" tabindex="-1">
             <div class="modal-dialog">
@@ -499,28 +499,28 @@ async function reserverRestaurant(id, formData) {
         }
 
         if (response.status === 201) {
-            showSuccessReservation(result.data);
+            afficherModaleReservation(result.data);
         } else if (response.status === 404) {
             afficherCreneauxAlternatifs(result.data, id, formData, formData.date);
         } else if (response.status === 409) {
-            showErrorPopup('Table non disponible', 'La table sélectionnée n\'est pas disponible pour cette date et heure.');
+            afficherPopupErreur('Table non disponible', 'La table sélectionnée n\'est pas disponible pour cette date et heure.');
         } else if (response.status === 400) {
-            showErrorPopup('Capacité insuffisante', 'Aucune table assez grande n\'est disponible pour ce nombre de personnes.');
+            afficherPopupErreur('Capacité insuffisante', 'Aucune table assez grande n\'est disponible pour ce nombre de personnes.');
         } else if (response.status === 500 || response.status === 503) {
             const errorMessage = result.error || 'Service temporairement indisponible';
-            showErrorPopup('Erreur serveur', errorMessage);
+            afficherPopupErreur('Erreur serveur', errorMessage);
         } else {
             const errorMessage = result.error || result.message || 'Erreur lors de la réservation';
-            showErrorPopup('Erreur de réservation', errorMessage);
+            afficherPopupErreur('Erreur de réservation', errorMessage);
         }
 
     } catch (error) {
         console.error('Erreur lors de la réservation:', error);
 
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            showErrorPopup('Connexion impossible', 'Impossible de se connecter au serveur de réservation');
+            afficherPopupErreur('Connexion impossible', 'Impossible de se connecter au serveur de réservation');
         } else {
-            showErrorPopup('Erreur de réservation', error.message);
+            afficherPopupErreur('Erreur de réservation', error.message);
         }
     }
 }
@@ -552,7 +552,7 @@ function routeToRestaurant(restaurantName, lat, lon) {
     });
 
     map.once('locationerror', function (e) {
-        showErrorPopup('Géolocalisation impossible', e.message);
+        afficherPopupErreur('Géolocalisation impossible', e.message);
     });
 }
 
@@ -570,21 +570,7 @@ function showAllRestaurants() {
     }
 }
 
-function toggleRestaurants() {
-    if (map.hasLayer(restaurantsLayer)) {
-        map.removeLayer(restaurantsLayer);
-        if (typeof showToast === 'function') {
-            showToast('Restaurants masqués', 'info', '👁️‍🗨️');
-        }
-    } else {
-        map.addLayer(restaurantsLayer);
-        if (typeof showToast === 'function') {
-            showToast('Restaurants affichés', 'info', '👁️');
-        }
-    }
-}
-
-async function loadStationsData() {
+async function chargerDonneesStations() {
     try {
         const gbfsUrl = `${CONFIG.get('CYCLOCITY_BASE_URL')}${CONFIG.get('CYCLOCITY_GBFS_ENDPOINT')}`;
         const gbfsResponse = await fetch(gbfsUrl);
@@ -610,15 +596,15 @@ async function loadStationsData() {
             statusResponse.json()
         ]);
 
-        processStationsData(stationsInfo.data.stations, statusData.data.stations);
+        traiterDonneesStations(stationsInfo.data.stations, statusData.data.stations);
 
     } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
-        showErrorPopup('Erreur stations', 'Impossible de charger les données des stations de vélos');
+        afficherPopupErreur('Erreur stations', 'Impossible de charger les données des stations de vélos');
     }
 }
 
-function processStationsData(stations, statuses) {
+function traiterDonneesStations(stations, statuses) {
     const statusMap = new Map(statuses.map(s => [s.station_id, s]));
     let totalBikes = 0;
     let totalDocks = 0;
@@ -665,7 +651,7 @@ function createStationMarker(station) {
 
     const marker = L.marker([station.lat, station.lon], {
         icon: L.divIcon({
-            className: 'custom-station-marker',
+            className: 'station-marker',
             html: `
                 <div style="
                     background: ${markerColor};
@@ -689,12 +675,12 @@ function createStationMarker(station) {
         })
     });
 
-    const popupContent = createStationPopupContent(station, cbText, isOperational);
+    const popupContent = createStationPopup(station, cbText, isOperational);
     marker.bindPopup(popupContent);
     markersLayer.addLayer(marker);
 }
 
-function createStationPopupContent(station, cbText, isOperational) {
+function createStationPopup(station, cbText, isOperational) {
     return `
         <div style="min-width: 250px;">
             <h5 style="margin-bottom: 10px; color: #212529;">
@@ -738,7 +724,33 @@ function createStationPopupContent(station, cbText, isOperational) {
     `;
 }
 
-async function loadIncidentsData() {
+function traiterDonneesIncidents(incidents) {
+    if (incidentsLayer) {
+        incidentsLayer.clearLayers();
+    } else {
+        incidentsLayer = L.layerGroup().addTo(map);
+    }
+
+    incidentsData = [];
+
+    incidents.forEach((incident, index) => {
+        try {
+            const incidentData = {
+                ...incident,
+                location: incident.location || { polyline: [CONFIG.get('DEFAULT_LAT'), CONFIG.get('DEFAULT_LON')] }
+            };
+
+            incidentsData.push(incidentData);
+
+            createIncidentMarker(incidentData);
+
+        } catch (error) {
+            console.error(`Erreur pour l'incident ${index}:`, error);
+        }
+    });
+}
+
+async function chargerDonneesIncidents() {
     try {
         const response = await fetch(CONFIG.get('INCIDENTS_API_URL'));
 
@@ -752,9 +764,9 @@ async function loadIncidentsData() {
         const data = await response.json();
 
         if (Array.isArray(data.data)) {
-            processIncidentsData(data.data);
+            traiterDonneesIncidents(data.data);
         } else if (data.data.incidents && Array.isArray(data.data.incidents)) {
-            processIncidentsData(data.data.incidents);
+            traiterDonneesIncidents(data.data.incidents);
         } else {
             console.error('Format inattendu des données incidents:', data.data);
         }
@@ -790,7 +802,7 @@ function createIncidentMarker(incident) {
 
     const marker = L.marker([lat, lon], {
         icon: L.divIcon({
-            className: 'custom-incident-marker',
+            className: 'incident-marker',
             html: `
                 <div style="
                     background: rgba(255, 0, 0, 0.8);
@@ -812,12 +824,12 @@ function createIncidentMarker(incident) {
         })
     });
 
-    const popupContent = createIncidentPopupContent(incident);
+    const popupContent = createIncidentPopup(incident);
     marker.bindPopup(popupContent);
     incidentsLayer.addLayer(marker);
 }
 
-function createIncidentPopupContent(incident) {
+function createIncidentPopup(incident) {
     return `
         <div style="min-width: 250px;">
             <h5 style="margin-bottom: 10px; color: #212529;">
@@ -837,33 +849,7 @@ function createIncidentPopupContent(incident) {
     `;
 }
 
-function processIncidentsData(incidents) {
-    if (incidentsLayer) {
-        incidentsLayer.clearLayers();
-    } else {
-        incidentsLayer = L.layerGroup().addTo(map);
-    }
-
-    incidentsData = [];
-
-    incidents.forEach((incident, index) => {
-        try {
-            const incidentData = {
-                ...incident,
-                location: incident.location || { polyline: [CONFIG.get('DEFAULT_LAT'), CONFIG.get('DEFAULT_LON')] }
-            };
-
-            incidentsData.push(incidentData);
-
-            createIncidentMarker(incidentData);
-
-        } catch (error) {
-            console.error(`Erreur pour l'incident ${index}:`, error);
-        }
-    });
-}
-
-function findNearestStation(latlng) {
+function stationPlusProche(latlon) {
     if (stationsData.length === 0) {
         return null;
     }
@@ -873,7 +859,7 @@ function findNearestStation(latlng) {
 
     stationsData.forEach(station => {
         const stationLatLng = L.latLng(station.lat, station.lon);
-        const distance = latlng.distanceTo(stationLatLng);
+        const distance = latlon.distanceTo(stationLatLng);
 
         if (distance < minDistance) {
             minDistance = distance;
@@ -884,7 +870,7 @@ function findNearestStation(latlng) {
     return nearestStation;
 }
 
-function routeToNearestStation() {
+function routeStationPlusProche() {
     map.locate({setView: false, maxZoom: CONFIG.getInt('LOCATION_MAX_ZOOM')});
 
     map.on('locationfound', function (e) {
@@ -892,9 +878,9 @@ function routeToNearestStation() {
             map.removeControl(routingControl);
         }
 
-        const nearestStation = findNearestStation(e.latlng);
+        const nearestStation = stationPlusProche(e.latlng);
         if (!nearestStation) {
-            showErrorPopup('Station introuvable', 'Aucune station trouvée à proximité.');
+            afficherPopupErreur('Station introuvable', 'Aucune station trouvée à proximité.');
             return;
         }
 
@@ -919,7 +905,7 @@ function routeToNearestStation() {
     });
 
     map.on('locationerror', function (e) {
-        showErrorPopup('Géolocalisation impossible', e.message);
+        afficherPopupErreur('Géolocalisation impossible', e.message);
     });
 }
 
